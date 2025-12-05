@@ -22,11 +22,22 @@ class MediaPlayerApp:
 
         pygame.init()
 
-        # Initialize display
-        self.screen = pygame.display.set_mode(
-            (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
-        )
-        pygame.display.set_caption("MediaPlayer")
+        # Initialize display with fallback to dummy driver
+        try:
+            self.screen = pygame.display.set_mode(
+                (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
+            )
+            pygame.display.set_caption("SamplePi")
+        except pygame.error as e:
+            print(f"Warning: Could not initialize display with current driver: {e}")
+            print("Falling back to dummy video driver - no display will show")
+            os.environ['SDL_VIDEODRIVER'] = 'dummy'
+            pygame.display.quit()
+            pygame.display.init()
+            self.screen = pygame.display.set_mode(
+                (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
+            )
+            pygame.display.set_caption("SamplePi")
 
         self.clock = pygame.time.Clock()
         self.running = True

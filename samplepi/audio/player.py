@@ -10,13 +10,20 @@ class AudioPlayer:
 
     def __init__(self):
         """Initialize the audio player"""
-        # Initialize pygame mixer
-        pygame.mixer.init(
-            frequency=settings.AUDIO_SAMPLE_RATE,
-            size=-16,
-            channels=2,
-            buffer=settings.AUDIO_BUFFER_SIZE
-        )
+        # Initialize pygame mixer with fallback for missing audio devices
+        try:
+            pygame.mixer.init(
+                frequency=settings.AUDIO_SAMPLE_RATE,
+                size=-16,
+                channels=2,
+                buffer=settings.AUDIO_BUFFER_SIZE
+            )
+        except pygame.error as e:
+            print(f"Warning: Could not initialize audio device: {e}")
+            print("Running in dummy audio mode - no sound will play")
+            # Initialize with dummy driver for testing without audio hardware
+            os.environ['SDL_AUDIODRIVER'] = 'dummy'
+            pygame.mixer.init()
 
         self.playlist = []
         self.current_index = 0
