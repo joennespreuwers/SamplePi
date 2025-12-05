@@ -4,6 +4,7 @@
 import pygame
 import sys
 import os
+import signal
 from samplepi.config import settings
 from samplepi.state import AppState
 from samplepi.ui.screens import StartScreen
@@ -87,18 +88,27 @@ class MediaPlayerApp:
 
     def run(self):
         """Main application loop"""
+        print("Starting main event loop...")
+        frame_count = 0
         while self.running:
             self.handle_events()
             self.update()
             self.render()
             self.clock.tick(settings.FPS)
 
+            # Print status every 60 frames (once per second at 60 FPS)
+            frame_count += 1
+            if frame_count % 60 == 0:
+                print(f"App running... (frame {frame_count})")
+
+        print("Exiting main loop, cleaning up...")
         self.cleanup()
 
     def handle_events(self):
         """Handle pygame events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                print("Received QUIT event, shutting down...")
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 self.handle_keyboard(event.key)
@@ -160,6 +170,15 @@ class MediaPlayerApp:
 def main():
     """Entry point"""
     app = MediaPlayerApp()
+
+    # Handle termination signals gracefully
+    def signal_handler(signum, frame):
+        print(f"Received signal {signum}, shutting down gracefully...")
+        app.running = False
+
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     app.run()
 
 
