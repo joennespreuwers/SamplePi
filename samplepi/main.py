@@ -22,8 +22,8 @@ class MediaPlayerApp:
         if 'SDL_VIDEODRIVER' in os.environ:
             drivers_to_try.append(os.environ['SDL_VIDEODRIVER'])
 
-        # Add fallback drivers
-        drivers_to_try.extend(['fbcon', 'directfb', 'dummy'])
+        # Add fallback drivers (kmsdrm is modern framebuffer driver for RPi)
+        drivers_to_try.extend(['kmsdrm', 'fbcon', 'directfb', 'dummy'])
 
         # Try to initialize display with each driver
         self.screen = None
@@ -31,7 +31,7 @@ class MediaPlayerApp:
             try:
                 print(f"Trying SDL video driver: {driver}")
                 os.environ['SDL_VIDEODRIVER'] = driver
-                if driver in ['fbcon', 'directfb']:
+                if driver in ['fbcon', 'directfb', 'kmsdrm']:
                     os.environ['SDL_FBDEV'] = '/dev/fb0'
                     os.environ['SDL_NOMOUSE'] = '1'
 
