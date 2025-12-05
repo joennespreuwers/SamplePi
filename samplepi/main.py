@@ -14,30 +14,43 @@ from samplepi.gpio.touchscreen import TouchscreenButtons
 class MediaPlayerApp:
     def __init__(self):
         """Initialize the MediaPlayer application"""
-        # Set SDL to use framebuffer on Raspberry Pi
-        # Comment out these lines for desktop testing
-        # os.environ['SDL_VIDEODRIVER'] = 'fbcon'
-        # os.environ['SDL_FBDEV'] = '/dev/fb0'
-        # os.environ['SDL_NOMOUSE'] = '1'
+        # Try different SDL video drivers in order of preference
+        drivers_to_try = []
 
-        pygame.init()
+        # Check if SDL environment variables are set (from systemd service)
+        if 'SDL_VIDEODRIVER' in os.environ:
+            drivers_to_try.append(os.environ['SDL_VIDEODRIVER'])
 
-        # Initialize display with fallback to dummy driver
-        try:
-            self.screen = pygame.display.set_mode(
-                (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
-            )
-            pygame.display.set_caption("SamplePi")
-        except pygame.error as e:
-            print(f"Warning: Could not initialize display with current driver: {e}")
-            print("Falling back to dummy video driver - no display will show")
-            os.environ['SDL_VIDEODRIVER'] = 'dummy'
-            pygame.display.quit()
-            pygame.display.init()
-            self.screen = pygame.display.set_mode(
-                (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
-            )
-            pygame.display.set_caption("SamplePi")
+        # Add fallback drivers
+        drivers_to_try.extend(['fbcon', 'directfb', 'dummy'])
+
+        # Try to initialize display with each driver
+        self.screen = None
+        for driver in drivers_to_try:
+            try:
+                print(f"Trying SDL video driver: {driver}")
+                os.environ['SDL_VIDEODRIVER'] = driver
+                if driver in ['fbcon', 'directfb']:
+                    os.environ['SDL_FBDEV'] = '/dev/fb0'
+                    os.environ['SDL_NOMOUSE'] = '1'
+
+                pygame.init()
+                self.screen = pygame.display.set_mode(
+                    (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
+                )
+                pygame.display.set_caption("SamplePi")
+                print(f"Successfully initialized display with {driver} driver")
+                break
+            except pygame.error as e:
+                print(f"Failed to initialize with {driver}: {e}")
+                if driver != drivers_to_try[-1]:  # If not the last driver
+                    pygame.display.quit()
+                    pygame.quit()
+                continue
+
+        if not self.screen:
+            print("ERROR: Could not initialize display with any driver")
+            sys.exit(1)
 
         self.clock = pygame.time.Clock()
         self.running = True
