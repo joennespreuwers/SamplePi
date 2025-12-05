@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SamplePi
+Comment=SamplePi Audio Playback System
+Exec=/home/samplepi/SamplePi/.venv/bin/python3 -m samplepi.main
+Path=/home/samplepi/SamplePi
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true

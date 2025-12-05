@@ -15,54 +15,70 @@ from samplepi.gpio.touchscreen import TouchscreenButtons
 class MediaPlayerApp:
     def __init__(self):
         """Initialize the MediaPlayer application"""
-        # Try different SDL video drivers in order of preference
-        drivers_to_try = []
+        pygame.init()
 
-        # Check if SDL environment variables are set (from systemd service)
-        if 'SDL_VIDEODRIVER' in os.environ:
-            drivers_to_try.append(os.environ['SDL_VIDEODRIVER'])
+        # Check if we're running in a desktop environment
+        has_display = 'DISPLAY' in os.environ or os.environ.get('WAYLAND_DISPLAY')
 
-        # Add fallback drivers (kmsdrm is modern framebuffer driver for RPi)
-        drivers_to_try.extend(['kmsdrm', 'fbcon', 'directfb', 'dummy'])
+        if has_display:
+            # Desktop mode - use X11/Wayland with fullscreen
+            print("Running in desktop mode with fullscreen display")
+            self.screen = pygame.display.set_mode(
+                (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT),
+                pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF
+            )
+            pygame.mouse.set_visible(False)  # Hide mouse cursor in fullscreen
+            pygame.display.set_caption("SamplePi")
+            print(f"Display initialized: {settings.DISPLAY_WIDTH}x{settings.DISPLAY_HEIGHT} fullscreen")
+            self.framebuffer = None
+        else:
+            # Headless/framebuffer mode - try various drivers
+            print("Running in headless mode, trying framebuffer drivers...")
+            drivers_to_try = []
 
-        # Try to initialize display with each driver
-        self.screen = None
-        for driver in drivers_to_try:
-            try:
-                print(f"Trying SDL video driver: {driver}")
-                os.environ['SDL_VIDEODRIVER'] = driver
-                if driver in ['fbcon', 'directfb', 'kmsdrm']:
-                    os.environ['SDL_FBDEV'] = '/dev/fb0'
-                    os.environ['SDL_NOMOUSE'] = '1'
+            # Check if SDL environment variables are set (from systemd service)
+            if 'SDL_VIDEODRIVER' in os.environ:
+                drivers_to_try.append(os.environ['SDL_VIDEODRIVER'])
 
-                pygame.init()
-                self.screen = pygame.display.set_mode(
-                    (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
-                )
-                pygame.display.set_caption("SamplePi")
-                print(f"Successfully initialized display with {driver} driver")
-                break
-            except pygame.error as e:
-                print(f"Failed to initialize with {driver}: {e}")
-                if driver != drivers_to_try[-1]:  # If not the last driver
-                    pygame.display.quit()
-                    pygame.quit()
-                continue
+            # Add fallback drivers
+            drivers_to_try.extend(['kmsdrm', 'fbcon', 'directfb', 'dummy'])
 
-        if not self.screen:
-            print("ERROR: Could not initialize display with any driver")
-            sys.exit(1)
+            # Try to initialize display with each driver
+            self.screen = None
+            for driver in drivers_to_try:
+                try:
+                    print(f"Trying SDL video driver: {driver}")
+                    os.environ['SDL_VIDEODRIVER'] = driver
+                    if driver in ['fbcon', 'directfb', 'kmsdrm']:
+                        os.environ['SDL_FBDEV'] = '/dev/fb0'
+                        os.environ['SDL_NOMOUSE'] = '1'
 
-        # Try direct framebuffer rendering if using dummy driver
-        self.framebuffer = None
-        if os.environ.get('SDL_VIDEODRIVER') == 'dummy' and os.path.exists('/dev/fb0'):
-            print("Attempting direct framebuffer rendering...")
-            from samplepi.framebuffer import Framebuffer
-            self.framebuffer = Framebuffer('/dev/fb0')
-            if self.framebuffer.is_available():
-                print("Direct framebuffer rendering enabled")
-            else:
-                print("Direct framebuffer rendering unavailable")
+                    self.screen = pygame.display.set_mode(
+                        (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT)
+                    )
+                    pygame.display.set_caption("SamplePi")
+                    print(f"Successfully initialized display with {driver} driver")
+                    break
+                except pygame.error as e:
+                    print(f"Failed to initialize with {driver}: {e}")
+                    if driver != drivers_to_try[-1]:
+                        pygame.display.quit()
+                    continue
+
+            if not self.screen:
+                print("ERROR: Could not initialize display with any driver")
+                sys.exit(1)
+
+            # Try direct framebuffer rendering if using dummy driver
+            self.framebuffer = None
+            if os.environ.get('SDL_VIDEODRIVER') == 'dummy' and os.path.exists('/dev/fb0'):
+                print("Attempting direct framebuffer rendering...")
+                from samplepi.framebuffer import Framebuffer
+                self.framebuffer = Framebuffer('/dev/fb0')
+                if self.framebuffer.is_available():
+                    print("Direct framebuffer rendering enabled")
+                else:
+                    print("Direct framebuffer rendering unavailable")
 
         self.clock = pygame.time.Clock()
         self.running = True

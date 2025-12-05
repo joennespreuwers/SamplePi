@@ -1,14 +1,15 @@
 [Unit]
 Description=SamplePi Audio Playback System
-After=multi-user.target
+After=graphical.target
+Wants=graphical.target
 
 [Service]
 Type=simple
 User=%USER%
 WorkingDirectory=%HOME%/SamplePi
-# Uncomment these lines once framebuffer display is configured:
-# Environment="SDL_FBDEV=/dev/fb0"
-# Environment="SDL_VIDEODRIVER=fbcon"
+# Set DISPLAY for desktop mode (X11)
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/%USER%/.Xauthority"
 ExecStart=%HOME%/SamplePi/.venv/bin/python3 -m samplepi.main
 Restart=always
 RestartSec=10
