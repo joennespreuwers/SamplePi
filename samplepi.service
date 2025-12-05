@@ -1,0 +1,17 @@
+[Unit]
+Description=SamplePi Audio Playback System
+After=multi-user.target
+
+[Service]
+Type=simple
+User=%USER%
+WorkingDirectory=%HOME%/SamplePi
+Environment="DISPLAY=:0"
+Environment="SDL_FBDEV=/dev/fb0"
+Environment="SDL_VIDEODRIVER=fbcon"
+ExecStart=%HOME%/SamplePi/.venv/bin/python3 -m samplepi.main
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
