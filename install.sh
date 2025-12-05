@@ -57,7 +57,8 @@ pip install -q --upgrade pip
 pip install -q -r requirements.txt
 
 # Enable system packages in venv (for lgpio)
-echo "/usr/lib/python3/dist-packages" > .venv/lib/python*/site-packages/system-packages.pth
+SITE_PACKAGES=$(find .venv/lib -type d -name "site-packages" | head -n 1)
+echo "/usr/lib/python3/dist-packages" > "$SITE_PACKAGES/system-packages.pth"
 
 # Configure HiFiBerry (if not already configured)
 echo "[6/7] Configuring HiFiBerry DAC..."
