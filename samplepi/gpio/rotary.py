@@ -18,23 +18,28 @@ class RotaryEncoder:
         self.button_pressed = False
         self._on_rotate_callback = None
         self._on_press_callback = None
+        self.encoder = None
+        self.button = None
 
         if GPIO_AVAILABLE:
-            # Initialize rotary encoder
-            self.encoder = GPIORotaryEncoder(
-                settings.ROTARY_CLK_PIN,
-                settings.ROTARY_DT_PIN,
-                wrap=False,
-                max_steps=1000
-            )
-            self.encoder.when_rotated = self._handle_rotation
+            try:
+                # Initialize rotary encoder
+                self.encoder = GPIORotaryEncoder(
+                    settings.ROTARY_CLK_PIN,
+                    settings.ROTARY_DT_PIN,
+                    wrap=False,
+                    max_steps=1000
+                )
+                self.encoder.when_rotated = self._handle_rotation
 
-            # Initialize button
-            self.button = Button(settings.ROTARY_SW_PIN, pull_up=True)
-            self.button.when_pressed = self._handle_press
-        else:
-            self.encoder = None
-            self.button = None
+                # Initialize button
+                self.button = Button(settings.ROTARY_SW_PIN, pull_up=True)
+                self.button.when_pressed = self._handle_press
+            except (RuntimeError, Exception) as e:
+                print(f"Warning: Could not initialize rotary encoder: {e}")
+                print("Running in mock GPIO mode")
+                self.encoder = None
+                self.button = None
 
     def _handle_rotation(self):
         """Internal rotation handler"""
