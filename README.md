@@ -25,6 +25,22 @@ Raspberry Pi audio playback system with camera trigger synchronization. A menu-d
 
 ## Quick Start
 
+### One-Command Install (Raspberry Pi)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/joennespreuwers/SamplePi/main/install.sh | bash
+```
+
+This will:
+- Install all system dependencies
+- Clone the repository to `~/SamplePi`
+- Set up Python virtual environment
+- Configure HiFiBerry audio
+- Install and enable systemd service
+- Set up desktop autostart (if desktop environment detected)
+
+After installation, reboot and SamplePi will start automatically!
+
 ### Development (Mac/Linux/Windows)
 
 1. **Clone and setup**:
