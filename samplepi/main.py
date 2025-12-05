@@ -53,6 +53,17 @@ class MediaPlayerApp:
             print("ERROR: Could not initialize display with any driver")
             sys.exit(1)
 
+        # Try direct framebuffer rendering if using dummy driver
+        self.framebuffer = None
+        if os.environ.get('SDL_VIDEODRIVER') == 'dummy' and os.path.exists('/dev/fb0'):
+            print("Attempting direct framebuffer rendering...")
+            from samplepi.framebuffer import Framebuffer
+            self.framebuffer = Framebuffer('/dev/fb0')
+            if self.framebuffer.is_available():
+                print("Direct framebuffer rendering enabled")
+            else:
+                print("Direct framebuffer rendering unavailable")
+
         self.clock = pygame.time.Clock()
         self.running = True
 
@@ -159,10 +170,16 @@ class MediaPlayerApp:
 
         pygame.display.flip()
 
+        # Also blit to framebuffer if available
+        if self.framebuffer and self.framebuffer.is_available():
+            self.framebuffer.blit(self.screen)
+
     def cleanup(self):
         """Clean up resources"""
         self.rotary.cleanup()
         self.camera_trigger.cleanup()
+        if self.framebuffer:
+            self.framebuffer.close()
         pygame.quit()
         sys.exit(0)
 
