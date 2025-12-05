@@ -6,9 +6,9 @@ After=multi-user.target
 Type=simple
 User=%USER%
 WorkingDirectory=%HOME%/SamplePi
-Environment="DISPLAY=:0"
-Environment="SDL_FBDEV=/dev/fb0"
-Environment="SDL_VIDEODRIVER=fbcon"
+# Uncomment these lines once framebuffer display is configured:
+# Environment="SDL_FBDEV=/dev/fb0"
+# Environment="SDL_VIDEODRIVER=fbcon"
 ExecStart=%HOME%/SamplePi/.venv/bin/python3 -m samplepi.main
 Restart=always
 RestartSec=10
