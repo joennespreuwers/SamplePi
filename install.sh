@@ -55,14 +55,14 @@ if ! grep -q "dtoverlay=waveshare32b" /boot/firmware/config.txt 2>/dev/null; the
     # Add Waveshare display configuration
     cat << 'EOF' | sudo tee -a /boot/firmware/config.txt
 
-# Waveshare 3.2" LCD Configuration
+# Waveshare 3.2" LCD Configuration (320x240)
 dtparam=spi=on
 dtoverlay=waveshare32b
 hdmi_force_hotplug=1
 max_usb_current=1
 hdmi_group=2
 hdmi_mode=87
-hdmi_cvt 640 480 60 6 0 0 0
+hdmi_cvt 320 240 60 6 0 0 0
 hdmi_drive=2
 display_rotate=0
 EOF

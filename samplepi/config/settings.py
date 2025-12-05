@@ -1,8 +1,8 @@
 """Configuration settings for MediaPlayer"""
 
-# Display settings
-DISPLAY_WIDTH = 480
-DISPLAY_HEIGHT = 320
+# Display settings (Waveshare 3.2" LCD is 320x240)
+DISPLAY_WIDTH = 320
+DISPLAY_HEIGHT = 240
 FPS = 30
 
 # GPIO Pin assignments (BCM numbering)
