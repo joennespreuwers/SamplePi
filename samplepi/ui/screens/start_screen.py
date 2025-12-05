@@ -40,6 +40,6 @@ class StartScreen(Screen):
     def render(self):
         """Render the screen"""
         self.screen.fill(settings.COLOR_BACKGROUND)
-        self.draw_title("MediaPlayer")
+        self.draw_title("SamplePi")
         self.menu.render(self.screen, self.font_medium)
         self.draw_buttons(["Home", None, "Start"])

@@ -7,7 +7,6 @@ Wants=graphical.target
 Type=simple
 User=%USER%
 WorkingDirectory=%HOME%/SamplePi
-# Set DISPLAY for desktop mode (X11)
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/%USER%/.Xauthority"
 ExecStart=%HOME%/SamplePi/.venv/bin/python3 -m samplepi.main
