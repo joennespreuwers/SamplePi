@@ -50,12 +50,7 @@ class MediaPlayerApp:
         # Set up rotary encoder callbacks
         self.rotary.on_rotate(self.handle_scroll)
         self.rotary.on_press(self.handle_select)
-
-        # Set up touchscreen callbacks
-        # Top button = Home (left), Middle button = Next (right), Bottom button = Back (middle)
-        self.touchscreen.on_left(lambda: self.handle_button("left"))
-        self.touchscreen.on_middle(lambda: self.handle_button("right"))
-        self.touchscreen.on_right(lambda: self.handle_button("middle"))
+        self.rotary.on_long_press(self.handle_long_press)
 
         # Start with home screen
         self.state.goto_screen(StartScreen(self))
@@ -99,12 +94,8 @@ class MediaPlayerApp:
             self.handle_scroll(1)
         elif key == pygame.K_RETURN or key == pygame.K_SPACE:
             self.handle_select()
-        elif key == pygame.K_h:  # H = Home button (top button)
-            self.handle_button("left")
-        elif key == pygame.K_n:  # N = Next button (middle button)
-            self.handle_button("right")
-        elif key == pygame.K_b:  # B = Back button (bottom button)
-            self.handle_button("middle")
+        elif key == pygame.K_l:  # L = Long press
+            self.handle_long_press()
 
     def handle_scroll(self, direction):
         """Handle scroll input"""
@@ -116,10 +107,10 @@ class MediaPlayerApp:
         if self.state.current_screen:
             self.state.current_screen.handle_select()
 
-    def handle_button(self, button):
-        """Handle button press"""
-        if self.state.current_screen:
-            self.state.current_screen.handle_button(button)
+    def handle_long_press(self):
+        """Handle long press input"""
+        if self.state.current_screen and hasattr(self.state.current_screen, 'handle_long_press'):
+            self.state.current_screen.handle_long_press()
 
     def update(self):
         """Update application state"""

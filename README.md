@@ -63,10 +63,8 @@ python3 -m samplepi.main
 
 4. **Keyboard controls**:
    - Arrow keys: Navigate menus
-   - Enter/Space: Select
-   - H: Home button
-   - B: Back button
-   - N: Next/Action button
+   - Enter/Space: Select (short press)
+   - L: Long press (Next/Advance)
    - ESC: Quit
 
 ### Production (Raspberry Pi)
@@ -129,7 +127,7 @@ DISPLAY_HEIGHT = 320
 ROTARY_CLK_PIN = 17
 ROTARY_DT_PIN = 27
 ROTARY_SW_PIN = 22
-CAMERA_TRIGGER_PIN = 23
+CAMERA_TRIGGER_PIN = 26
 
 # Audio
 AUDIO_SAMPLE_RATE = 44100
@@ -150,7 +148,7 @@ MEDIA_ROOT = "/home/pi/media"  # Production
 - + → 3.3V
 
 **Camera Trigger**:
-- GPIO 23 → Camera trigger input (100ms pulse)
+- GPIO 26 → Camera trigger input (100ms pulse)
 
 **HiFiBerry DAC+**:
 - Mounts directly on GPIO header (uses I2S pins)

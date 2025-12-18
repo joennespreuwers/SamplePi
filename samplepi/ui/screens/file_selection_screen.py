@@ -22,7 +22,7 @@ class FileSelectionScreen(Screen):
             self.files = ["No files found"]
 
         self.menu = MenuList(self.files, y_start=100, item_height=35)
-        self.menu.visible_items = 4  # Show only 4 items to fit in box
+        self.menu.visible_items = 5  # Show 5 items with full height
 
     def get_files(self):
         """Get list of WAV files from directory"""
@@ -54,18 +54,9 @@ class FileSelectionScreen(Screen):
             else:
                 self.selected_files.add(selected)
 
-    def handle_button(self, button):
-        """Handle button press"""
-        if button == "left":  # Home
-            from .start_screen import StartScreen
-            self.app.state.go_home()
-            self.app.state.goto_screen(StartScreen(self.app))
-        elif button == "middle":  # Back
-            self.app.state.go_back()
-        elif button == "right":  # Next
-            if self.selected_files:
-                self.proceed_to_next()
-            # If no files selected, do nothing
+    def handle_long_press(self):
+        """Handle long press - proceed to next screen"""
+        self.proceed_to_next()
 
     def proceed_to_next(self):
         """Move to next screen based on file type"""
@@ -86,17 +77,17 @@ class FileSelectionScreen(Screen):
         self.screen.fill(settings.COLOR_BACKGROUND)
         self.draw_title(self.title)
 
-        # Show selection count
+        # Show selection count and hint
         count_text = f"Selected: {len(self.selected_files)}"
         self.draw_text(count_text, 60, color=settings.COLOR_HIGHLIGHT)
 
-        # Draw file browser box
-        self.browser_rect = pygame.Rect(30, 90, settings.DISPLAY_WIDTH - 60, 160)
+        # Draw file browser box (full width with small margins)
+        self.browser_rect = pygame.Rect(10, 90, settings.DISPLAY_WIDTH - 20, settings.DISPLAY_HEIGHT - 100)
         pygame.draw.rect(self.screen, (40, 40, 50), self.browser_rect)
         pygame.draw.rect(self.screen, settings.COLOR_TEXT, self.browser_rect, 2)
 
         # Set clipping area to browser box (excluding scrollbar area)
-        clip_rect = pygame.Rect(30, 90, settings.DISPLAY_WIDTH - 90, 160)
+        clip_rect = pygame.Rect(10, 90, settings.DISPLAY_WIDTH - 50, settings.DISPLAY_HEIGHT - 100)
         self.screen.set_clip(clip_rect)
 
         # Render menu with checkmarks for selected items
@@ -110,8 +101,6 @@ class FileSelectionScreen(Screen):
             start_idx = max(0, self.menu.selected_index - self.menu.visible_items // 2)
             end_idx = min(len(self.menu.items), start_idx + self.menu.visible_items)
             self.draw_scrollbar(start_idx, end_idx)
-
-        self.draw_buttons(["Home", "Back", "Next"])
 
     def render_file_list(self):
         """Render file list with selection indicators"""
@@ -131,24 +120,24 @@ class FileSelectionScreen(Screen):
 
             # Draw selection background
             if is_selected:
-                rect = pygame.Rect(40, y - 5, settings.DISPLAY_WIDTH - 90, self.menu.item_height)
+                rect = pygame.Rect(20, y - 5, settings.DISPLAY_WIDTH - 60, self.menu.item_height)
                 pygame.draw.rect(self.screen, settings.COLOR_BUTTON_ACTIVE, rect)
                 pygame.draw.rect(self.screen, settings.COLOR_HIGHLIGHT, rect, 2)
 
             # Draw checkbox
-            checkbox_rect = pygame.Rect(50, y, 20, 20)
+            checkbox_rect = pygame.Rect(25, y, 20, 20)
             pygame.draw.rect(self.screen, settings.COLOR_TEXT, checkbox_rect, 2)
             if is_checked:
                 # Draw checkmark
                 pygame.draw.line(self.screen, settings.COLOR_HIGHLIGHT,
-                               (52, y + 10), (58, y + 16), 3)
+                               (27, y + 10), (33, y + 16), 3)
                 pygame.draw.line(self.screen, settings.COLOR_HIGHLIGHT,
-                               (58, y + 16), (68, y + 6), 3)
+                               (33, y + 16), (43, y + 6), 3)
 
             # Draw item text
             color = settings.COLOR_HIGHLIGHT if is_selected else settings.COLOR_TEXT
             text = self.font_small.render(str(item), True, color)
-            text_rect = text.get_rect(left=80, centery=y + 10)
+            text_rect = text.get_rect(left=55, centery=y + 10)
             self.screen.blit(text, text_rect)
 
             y += self.menu.item_height
@@ -156,7 +145,7 @@ class FileSelectionScreen(Screen):
     def draw_scrollbar(self, start_idx, end_idx):
         """Draw a visual scrollbar"""
         # Scrollbar position
-        scrollbar_x = settings.DISPLAY_WIDTH - 50
+        scrollbar_x = settings.DISPLAY_WIDTH - 25
         scrollbar_y = self.menu.y_start
         scrollbar_height = self.menu.visible_items * self.menu.item_height
 
@@ -168,7 +157,7 @@ class FileSelectionScreen(Screen):
         # Calculate thumb size and position
         total_items = len(self.menu.items)
         thumb_height = max(20, scrollbar_height * self.menu.visible_items // total_items)
-        thumb_y = scrollbar_y + (scrollbar_height - thumb_height) * self.menu.selected_index // (total_items - 1)
+        thumb_y = scrollbar_y + (scrollbar_height - thumb_height) * self.menu.selected_index // (total_items - 1) if total_items > 1 else scrollbar_y
 
         # Draw scrollbar thumb
         thumb_rect = pygame.Rect(scrollbar_x, thumb_y, 10, thumb_height)

@@ -19,17 +19,10 @@ class RecordingToggleScreen(Screen):
         """Handle select input - toggle recording"""
         self.app.state.record_video = not self.app.state.record_video
 
-    def handle_button(self, button):
-        """Handle button press"""
-        if button == "left":  # Home
-            from .start_screen import StartScreen
-            self.app.state.go_home()
-            self.app.state.goto_screen(StartScreen(self.app))
-        elif button == "middle":  # Back
-            self.app.state.go_back()
-        elif button == "right":  # Next - go to confirm screen
-            from .confirm_screen import ConfirmScreen
-            self.app.state.goto_screen(ConfirmScreen(self.app))
+    def handle_long_press(self):
+        """Handle long press - proceed to confirm screen"""
+        from .confirm_screen import ConfirmScreen
+        self.app.state.goto_screen(ConfirmScreen(self.app))
 
     def render(self):
         """Render the screen"""
@@ -49,8 +42,6 @@ class RecordingToggleScreen(Screen):
         # Draw toggle switch
         y += 40
         self.draw_toggle_switch(y)
-
-        self.draw_buttons(["Home", "Back", "Next"])
 
     def draw_toggle_switch(self, y):
         """Draw a toggle switch"""

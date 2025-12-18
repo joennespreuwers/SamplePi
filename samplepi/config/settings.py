@@ -15,7 +15,7 @@ BUTTON_TOP_PIN = 5      # Top button (Home)
 BUTTON_MIDDLE_PIN = 6   # Middle button (Next/Action)
 BUTTON_BOTTOM_PIN = 13  # Bottom button (Back)
 
-CAMERA_TRIGGER_PIN = 23  # GPIO output for camera trigger
+CAMERA_TRIGGER_PIN = 26  # GPIO output for camera trigger
 CAMERA_TRIGGER_DURATION = 0.1  # 100ms pulse duration
 
 # Audio settings

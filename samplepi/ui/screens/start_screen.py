@@ -28,18 +28,12 @@ class StartScreen(Screen):
                 FileSelectionScreen(self.app, "test_wavs", "Select Test WAV Files")
             )
 
-    def handle_button(self, button):
-        """Handle button press"""
-        if button == "left":  # Home (already at home)
-            pass
-        elif button == "middle":  # Back (stays on home)
-            pass
-        elif button == "right":  # Next - start new session
-            self.handle_select()
+    def handle_long_press(self):
+        """Handle long press - start new session"""
+        self.handle_select()
 
     def render(self):
         """Render the screen"""
         self.screen.fill(settings.COLOR_BACKGROUND)
         self.draw_title("SamplePi")
         self.menu.render(self.screen, self.font_medium)
-        self.draw_buttons(["Home", None, "Start"])

@@ -31,14 +31,13 @@ class PlaybackScreen(Screen):
             self.app.camera_trigger.send_pulse()
             self.status_message = "Recording started..."
 
-    def handle_button(self, button):
-        """Handle button press"""
-        if button == "left":  # Pause/Resume
-            self.toggle_pause()
-        elif button == "middle":  # Reset/Reboot
-            self.reset()
-        elif button == "right":  # Stop
-            self.stop_playback()
+    def handle_select(self):
+        """Handle select - toggle pause/resume"""
+        self.toggle_pause()
+
+    def handle_long_press(self):
+        """Handle long press - stop playback"""
+        self.stop_playback()
 
     def toggle_pause(self):
         """Toggle pause/resume (does NOT affect recording)"""
@@ -56,14 +55,6 @@ class PlaybackScreen(Screen):
         self.app.audio_player.stop()
         from .complete_screen import CompleteScreen
         self.app.state.goto_screen(CompleteScreen(self.app))
-
-    def reset(self):
-        """Reset to home screen"""
-        self.app.state.is_playing = False
-        self.app.audio_player.stop()
-        from .start_screen import StartScreen
-        self.app.state.go_home()
-        self.app.state.goto_screen(StartScreen(self.app))
 
     def update(self):
         """Update playback state"""
@@ -102,10 +93,6 @@ class PlaybackScreen(Screen):
 
         if self.app.state.record_video:
             self.draw_text("Camera Recording Active", y, self.font_small, settings.COLOR_HIGHLIGHT)
-
-        # Show playback controls
-        pause_label = "Resume" if self.app.state.is_paused else "Pause"
-        self.draw_buttons([pause_label, "Reset", "Stop"])
 
     def draw_progress_bar(self, y, current, total):
         """Draw a visual progress bar"""
