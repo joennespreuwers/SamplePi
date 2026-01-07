@@ -53,6 +53,12 @@ class PlaybackScreen(Screen):
         """Stop playback and show completion screen"""
         self.app.state.is_playing = False
         self.app.audio_player.stop()
+
+        # Send stop pulse to camera if recording was enabled
+        if self.app.state.record_video:
+            self.app.camera_trigger.send_pulse()
+            print("Camera stop pulse sent")
+
         from .complete_screen import CompleteScreen
         self.app.state.goto_screen(CompleteScreen(self.app))
 

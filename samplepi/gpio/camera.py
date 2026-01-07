@@ -18,10 +18,16 @@ class CameraTrigger:
         self.trigger = None
         if GPIO_AVAILABLE:
             try:
+                # Initialize with explicit LOW state and active_high to prevent startup pulse
                 self.trigger = OutputDevice(
                     settings.CAMERA_TRIGGER_PIN,
-                    initial_value=False
+                    active_high=True,
+                    initial_value=False,
+                    pin_factory=None  # Use default pin factory
                 )
+                # Ensure pin is definitely LOW after initialization
+                self.trigger.off()
+                print(f"Camera trigger initialized on GPIO {settings.CAMERA_TRIGGER_PIN}")
             except (RuntimeError, Exception) as e:
                 print(f"Warning: Could not initialize camera trigger: {e}")
                 print("Running in mock GPIO mode")
