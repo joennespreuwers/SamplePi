@@ -13,6 +13,16 @@ class StartScreen(Screen):
         super().__init__(app)
         self.menu = MenuList(["Start New Session"])
 
+    def handle_input(self, pos, button):
+        """Handle mouse/touch input events"""
+        # Check if touch is on menu item
+        if self.menu.handle_touch(pos):
+            # If menu item was touched, treat as select
+            self.handle_select()
+        else:
+            # Otherwise, use default button handling
+            super().handle_input(pos, button)
+
     def handle_scroll(self, direction):
         """Handle scroll input"""
         self.menu.scroll(direction)

@@ -81,6 +81,8 @@ class MediaPlayerApp:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 self.handle_keyboard(event.key)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.handle_mouse(event.pos, event.button)
 
     def handle_keyboard(self, key):
         """Handle keyboard input (for testing on Mac)"""
@@ -96,6 +98,13 @@ class MediaPlayerApp:
             self.handle_select()
         elif key == pygame.K_l:  # L = Long press
             self.handle_long_press()
+
+    def handle_mouse(self, pos, button):
+        """Handle mouse/touch input"""
+        # Get current screen and check if it has mouse handling capabilities
+        if self.state.current_screen and hasattr(self.state.current_screen, 'handle_input'):
+            # Pass the mouse event to the current screen
+            self.state.current_screen.handle_input(pos, button)
 
     def handle_scroll(self, direction):
         """Handle scroll input"""

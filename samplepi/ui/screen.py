@@ -14,8 +14,35 @@ class Screen:
         self.font_medium = app.font_medium
         self.font_small = app.font_small
 
-    def handle_input(self, event):
-        """Handle input events (keyboard, mouse, etc.)"""
+    def handle_input(self, pos, button):
+        """Handle mouse/touch input events"""
+        # Default implementation - override in subclasses
+        mouse_x, mouse_y = pos
+
+        # Check if click is in button area (bottom 3 buttons)
+        button_y = settings.DISPLAY_HEIGHT - settings.BUTTON_HEIGHT
+        button_width = settings.DISPLAY_WIDTH // 3
+
+        if mouse_y >= button_y:  # Click is in button area
+            button_index = mouse_x // button_width
+
+            if button_index == 0:  # Left button
+                self.handle_left_button()
+            elif button_index == 1:  # Middle button
+                self.handle_middle_button()
+            elif button_index == 2:  # Right button
+                self.handle_right_button()
+
+    def handle_left_button(self):
+        """Handle left button press (override in subclasses)"""
+        pass
+
+    def handle_middle_button(self):
+        """Handle middle button press (override in subclasses)"""
+        pass
+
+    def handle_right_button(self):
+        """Handle right button press (override in subclasses)"""
         pass
 
     def handle_button(self, button):

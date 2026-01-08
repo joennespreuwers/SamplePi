@@ -29,6 +29,34 @@ class MenuList:
         """Get selected index"""
         return self.selected_index
 
+    def handle_touch(self, pos):
+        """Handle touch/mouse selection of menu items"""
+        mouse_x, mouse_y = pos
+
+        # Calculate visible range
+        start_idx = max(0, self.selected_index - self.visible_items // 2)
+        end_idx = min(len(self.items), start_idx + self.visible_items)
+
+        # Adjust if at end of list
+        if end_idx - start_idx < self.visible_items:
+            start_idx = max(0, end_idx - self.visible_items)
+
+        # Check if touch is within menu area
+        y = self.y_start
+        for i in range(start_idx, end_idx):
+            item_y = y
+            item_end_y = y + self.item_height
+
+            # Check if touch is within this item's bounds
+            if item_y <= mouse_y <= item_end_y:
+                # Select this item
+                self.selected_index = i
+                return True
+
+            y += self.item_height
+
+        return False
+
     def render(self, screen, font):
         """Render the menu list"""
         # Calculate visible range
