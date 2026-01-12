@@ -6,14 +6,15 @@ DISPLAY_HEIGHT = 240
 FPS = 30
 
 # GPIO Pin assignments (BCM numbering)
-ROTARY_CLK_PIN = 17  # Rotary encoder clock
-ROTARY_DT_PIN = 27   # Rotary encoder data
-ROTARY_SW_PIN = 22   # Rotary encoder switch/button
+# Using pins that don't conflict with SPI display and XPT2046 touch controller
+ROTARY_CLK_PIN = 12  # Rotary encoder clock (PWM0 - safe pin)
+ROTARY_DT_PIN = 13   # Rotary encoder data (PWM1 - safe pin, was BUTTON_BOTTOM_PIN)
+ROTARY_SW_PIN = 16   # Rotary encoder switch/button (CE2 - safe pin)
 
 # Physical buttons on left side of display (top to bottom)
 BUTTON_TOP_PIN = 5      # Top button (Home)
 BUTTON_MIDDLE_PIN = 6   # Middle button (Next/Action)
-BUTTON_BOTTOM_PIN = 13  # Bottom button (Back)
+BUTTON_BOTTOM_PIN = 19  # Bottom button (Back) - Changed from 13 to avoid conflict
 
 CAMERA_TRIGGER_PIN = 26  # GPIO output for camera trigger
 CAMERA_TRIGGER_DURATION = 0.1  # 100ms pulse duration
