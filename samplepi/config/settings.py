@@ -11,10 +11,8 @@ ROTARY_CLK_PIN = 12  # Rotary encoder clock (PWM0 - safe pin)
 ROTARY_DT_PIN = 13   # Rotary encoder data (PWM1 - safe pin, was BUTTON_BOTTOM_PIN)
 ROTARY_SW_PIN = 16   # Rotary encoder switch/button (CE2 - safe pin)
 
-# Physical buttons on left side of display (top to bottom)
-BUTTON_TOP_PIN = 5      # Top button (Home)
-BUTTON_MIDDLE_PIN = 6   # Middle button (Next/Action)
-BUTTON_BOTTOM_PIN = 19  # Bottom button (Back) - Changed from 13 to avoid conflict
+# Single button for long press functionality
+LONG_PRESS_BUTTON_PIN = 6  # Middle button position (Next/Action/Long Press)
 
 CAMERA_TRIGGER_PIN = 26  # GPIO output for camera trigger
 CAMERA_TRIGGER_DURATION = 0.1  # 100ms pulse duration
@@ -26,8 +24,13 @@ AUDIO_BUFFER_SIZE = 2048
 # File paths
 import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA_ROOT = os.path.join(PROJECT_ROOT, "test_media")  # For development
-# MEDIA_ROOT = "/home/pi/media"  # Uncomment for production on Pi
+
+# Check if running in production mode
+if os.environ.get('MEDIA_PATH_TYPE') == 'production':
+    MEDIA_ROOT = "/home/pi/media"  # Production media path
+else:
+    MEDIA_ROOT = os.path.join(PROJECT_ROOT, "test_media")  # For development
+
 TEST_WAVS_DIR = os.path.join(MEDIA_ROOT, "test_wavs")
 SAMPLES_DIR = os.path.join(MEDIA_ROOT, "samples")
 

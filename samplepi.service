@@ -9,6 +9,7 @@ User=%USER%
 WorkingDirectory=%HOME%/SamplePi
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/%USER%/.Xauthority"
+Environment="MEDIA_PATH_TYPE=production"
 ExecStart=%HOME%/SamplePi/.venv/bin/python3 -m samplepi.main
 Restart=always
 RestartSec=10

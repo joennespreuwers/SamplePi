@@ -1,0 +1,14 @@
+[Unit]
+Description=SamplePi USB Gadget Auto-sync Service
+After=multi-user.target
+Requires=usb-gadget.service
+
+[Service]
+Type=forking
+RemainAfterExit=yes
+ExecStart=/home/pi/SamplePi/usb_gadget/autosync_service.sh startup
+ExecStop=/home/pi/SamplePi/usb_gadget/autosync_service.sh shutdown
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

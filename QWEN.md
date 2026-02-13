@@ -117,32 +117,46 @@ Key settings in `samplepi/config/settings.py`:
 
 ```python
 # Display
-DISPLAY_WIDTH = 480
-DISPLAY_HEIGHT = 320
+DISPLAY_WIDTH = 320
+DISPLAY_HEIGHT = 240
 
 # GPIO Pins (BCM numbering)
-ROTARY_CLK_PIN = 17
-ROTARY_DT_PIN = 27
-ROTARY_SW_PIN = 22
-CAMERA_TRIGGER_PIN = 26
+ROTARY_CLK_PIN = 12  # Rotary encoder clock (PWM0 - safe pin)
+ROTARY_DT_PIN = 13   # Rotary encoder data (PWM1 - safe pin, was BUTTON_BOTTOM_PIN)
+ROTARY_SW_PIN = 16   # Rotary encoder switch/button (CE2 - safe pin)
+
+# Physical buttons on left side of display (top to bottom)
+BUTTON_TOP_PIN = 5      # Top button (Home)
+BUTTON_MIDDLE_PIN = 6   # Middle button (Next/Action)
+BUTTON_BOTTOM_PIN = 19  # Bottom button (Back) - Changed from 13 to avoid conflict
+
+CAMERA_TRIGGER_PIN = 26  # GPIO output for camera trigger
+CAMERA_TRIGGER_DURATION = 0.1  # 100ms pulse duration
 
 # Audio
 AUDIO_SAMPLE_RATE = 44100
 AUDIO_BUFFER_SIZE = 2048
 
 # Media paths
-MEDIA_ROOT = "/home/pi/media"  # Production
-# MEDIA_ROOT = os.path.join(PROJECT_ROOT, "test_media")  # Development
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, "test_media")  # For development
+# MEDIA_ROOT = "/home/pi/media"  # Uncomment for production on Pi
+TEST_WAVS_DIR = os.path.join(MEDIA_ROOT, "test_wavs")
+SAMPLES_DIR = os.path.join(MEDIA_ROOT, "samples")
 ```
 
 ## GPIO Wiring
 
 **Rotary Encoder**:
-- CLK → GPIO 17
-- DT → GPIO 27
-- SW → GPIO 22
+- CLK → GPIO 12
+- DT → GPIO 13
+- SW → GPIO 16
 - GND → Ground
 - + → 3.3V
+
+**Physical Buttons** (on left side of display):
+- Top Button → GPIO 5 (Home)
+- Middle Button → GPIO 6 (Next/Action)
+- Bottom Button → GPIO 19 (Back)
 
 **Camera Trigger**:
 - GPIO 26 → Camera trigger input (100ms pulse)
@@ -191,3 +205,54 @@ MEDIA_ROOT = "/home/pi/media"  # Production
 - GPIO errors: Ensure user is in `gpio` group
 
 For detailed troubleshooting, see [RASPBERRY_PI_SETUP.md](RASPBERRY_PI_SETUP.md#troubleshooting).
+
+## Next Steps
+
+### Flashing the Rotary Encoder Firmware
+
+The Raspberry Pi Pico running the rotary encoder firmware can be flashed using the Arduino CLI as follows:
+
+1. **Compile the firmware**:
+```bash
+arduino-cli compile --fqbn rp2040:rp2040:rpipico /path/to/pico_rotary_encoder
+```
+
+2. **Upload to the Pico**:
+```bash
+arduino-cli upload -p /dev/cu.usbmodem1101 --fqbn rp2040:rp2040:rpipico /path/to/pico_rotary_encoder
+```
+
+This process converts the firmware to a UF2 file and flashes it to the Pico when it enters BOOTSEL mode. The Pico will then operate as a USB HID device, translating rotary encoder inputs to keyboard events.
+
+### Hardware Connections
+
+To complete the SamplePi system, connect the following hardware components:
+
+#### Raspberry Pi Pico (Rotary Encoder Interface)
+- Connect the rotary encoder to the Pico:
+  - Rotary CLK → GPIO 2 on Pico
+  - Rotary DT → GPIO 3 on Pico
+  - Rotary SW → GPIO 4 on Pico
+  - VCC and GND connections as required
+
+#### Raspberry Pi 4 Connections
+- The Pico connects to the Pi 4 via USB cable (provides both power and data communication)
+- HiFiBerry DAC connects directly to the Pi 4 GPIO header
+- Touchscreen display connects via SPI/I2C (depending on model)
+- Camera trigger connects to GPIO 26 on the Pi 4
+
+#### Camera Connection
+- Connect the camera trigger wire to GPIO 26 on the Pi 4
+- The camera should be configured to accept GPIO-triggered recording start/stop commands
+
+### System Integration and Testing
+
+Once all hardware is connected:
+
+1. The Raspberry Pi Pico acts as a USB keyboard device, sending keystrokes to the Pi 4
+2. Rotary encoder movements are translated to arrow keys (for navigation)
+3. Button presses are translated to Enter (for selection) and L key (for long press)
+4. The SamplePi application receives these keyboard events as standard input
+5. When record_video is enabled, GPIO 26 sends 100ms pulses to trigger camera recording
+
+This USB HID approach allows the rotary encoder to function as a generic input device without requiring special drivers, making the system more robust and portable.

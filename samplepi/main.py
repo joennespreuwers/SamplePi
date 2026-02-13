@@ -52,6 +52,9 @@ class MediaPlayerApp:
         self.rotary.on_press(self.handle_select)
         self.rotary.on_long_press(self.handle_long_press)
 
+        # Set up long press button callback
+        self.touchscreen.on_long_press(self.handle_long_press)
+
         # Start with home screen
         self.state.goto_screen(StartScreen(self))
 

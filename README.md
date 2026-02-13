@@ -153,6 +153,32 @@ MEDIA_ROOT = "/home/pi/media"  # Production
 **HiFiBerry DAC+**:
 - Mounts directly on GPIO header (uses I2S pins)
 
+## USB Mass Storage Gadget Mode
+
+SamplePi includes support for USB gadget mode, allowing the Raspberry Pi to appear as a USB mass storage device when connected to a computer. This enables easy file management of audio samples without requiring network connectivity.
+
+### Enabling USB Gadget Mode
+
+1. Run the setup script:
+```bash
+chmod +x usb_gadget/setup_usb_gadget.sh
+sudo ./usb_gadget/setup_usb_gadget.sh
+```
+
+2. Reboot the Raspberry Pi:
+```bash
+sudo reboot
+```
+
+3. After reboot, connect the Pi to your computer via USB to access the media files as a drive
+
+### Managing Files via USB
+
+- When connected to a computer, the Pi will appear as "SamplePi Media Storage"
+- Audio files can be copied to the `samples/` and `test_wavs/` directories
+- Safely eject the drive from your computer when finished
+- The SamplePi application will have access to the new files after the USB connection is disconnected
+
 ## Service Management
 
 ```bash
@@ -177,6 +203,7 @@ See [RASPBERRY_PI_SETUP.md](RASPBERRY_PI_SETUP.md#troubleshooting) for detailed 
 - No audio: Check HiFiBerry configuration in `/boot/firmware/config.txt`
 - No display: Verify framebuffer device `/dev/fb0` exists
 - GPIO errors: Ensure user is in `gpio` group
+- USB gadget not appearing: Check that the Pi supports USB OTG and that you're using the correct USB port
 
 ## Documentation
 
@@ -184,6 +211,7 @@ See [RASPBERRY_PI_SETUP.md](RASPBERRY_PI_SETUP.md#troubleshooting) for detailed 
 - [RASPBERRY_PI_SETUP.md](RASPBERRY_PI_SETUP.md) - Detailed Pi setup and configuration
 - [CLAUDE.md](CLAUDE.md) - Project documentation for AI assistants
 - [design.md](design.md) - Original design specification
+- [usb_gadget/README.md](usb_gadget/README.md) - USB gadget mode documentation
 
 ## License
 
