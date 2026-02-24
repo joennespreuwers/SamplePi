@@ -7,7 +7,15 @@ from samplepi.config import settings
 
 
 class PlaybackScreen(Screen):
-    """Screen shown during playback"""
+    """Screen shown during playback
+    
+    Button mappings during playback:
+    - Top button: No-op (or could show status)
+    - Middle button: Pause/Resume
+    - Bottom button: Stop playback
+    - Rotary button: Pause/Resume
+    - Rotary long press: Stop playback
+    """
 
     def __init__(self, app):
         super().__init__(app)
@@ -37,6 +45,19 @@ class PlaybackScreen(Screen):
 
     def handle_long_press(self):
         """Handle long press - stop playback"""
+        self.stop_playback()
+
+    def handle_top_button(self):
+        """Handle top button - no-op during playback"""
+        # Could show status or do nothing
+        pass
+
+    def handle_middle_button(self):
+        """Handle middle button - toggle pause/resume"""
+        self.toggle_pause()
+
+    def handle_bottom_button(self):
+        """Handle bottom button - stop playback"""
         self.stop_playback()
 
     def toggle_pause(self):

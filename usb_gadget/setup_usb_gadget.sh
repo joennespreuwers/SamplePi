@@ -2,10 +2,19 @@
 
 # Script to configure Raspberry Pi as a USB Mass Storage Gadget
 # This allows the SamplePi media directories to be accessed as a USB drive
+# 
+# ON-DEMAND MODE: This setup enables toggling gadget mode via long-press
+# of the top button (GPIO 5) on the SamplePi interface.
 
 set -e  # Exit on any error
 
 echo "Setting up Raspberry Pi as USB Mass Storage Gadget for SamplePi..."
+echo ""
+echo "This setup enables ON-DEMAND gadget mode:"
+echo "  - Long-press TOP button (GPIO 5) to toggle USB gadget mode"
+echo "  - Pi will reboot and appear as 'SamplePi Media Storage'"
+echo "  - Long-press TOP button again to exit gadget mode"
+echo ""
 
 # Check if running on Raspberry Pi
 if ! [ -f /proc/device-tree/model ]; then
@@ -13,20 +22,24 @@ if ! [ -f /proc/device-tree/model ]; then
     exit 1
 fi
 
+# Get current username
+CURRENT_USER=$(whoami)
+
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
-    echo "This script should not be run as root. Please run as pi user."
+    echo "This script should not be run as root. Please run as a regular user (e.g., pi or samplepi)."
     exit 1
 fi
 
-# Define media directory paths
-MEDIA_ROOT="/home/pi/media"
+# Define media directory paths (using current user's home directory)
+HOME_DIR="/home/$CURRENT_USER"
+MEDIA_ROOT="$HOME_DIR/media"
 SAMPLES_DIR="$MEDIA_ROOT/samples"
 TEST_WAVS_DIR="$MEDIA_ROOT/test_wavs"
 
 # Also check if the application is using the default test_media directory
 # and adjust accordingly for consistency
-APP_MEDIA_ROOT="/home/pi/SamplePi/test_media"
+APP_MEDIA_ROOT="$HOME_DIR/SamplePi/test_media"
 APP_SAMPLES_DIR="$APP_MEDIA_ROOT/samples"
 APP_TEST_WAVS_DIR="$APP_MEDIA_ROOT/test_wavs"
 
@@ -43,12 +56,12 @@ IMAGE_SIZE_MB=$((IMAGE_SIZE_MB + 100))  # Round up
 echo "Creating mass storage image of size ${IMAGE_SIZE_MB}MB..."
 
 # Create the mass storage image file
-sudo dd if=/dev/zero of=/home/pi/samplepi_media_storage.img bs=1M count=$IMAGE_SIZE_MB
-sudo mkfs.vfat /home/pi/samplepi_media_storage.img
+sudo dd if=/dev/zero of=$HOME_DIR/samplepi_media_storage.img bs=1M count=$IMAGE_SIZE_MB
+sudo mkfs.vfat $HOME_DIR/samplepi_media_storage.img
 
 # Mount the image temporarily to set up directory structure
 sudo mkdir -p /mnt/gadget_temp
-sudo mount -o loop /home/pi/samplepi_media_storage.img /mnt/gadget_temp
+sudo mount -o loop $HOME_DIR/samplepi_media_storage.img /mnt/gadget_temp
 
 # Copy existing media files to the image
 sudo cp -r "$SAMPLES_DIR" /mnt/gadget_temp/ 2>/dev/null || echo "No samples to copy"
@@ -94,7 +107,10 @@ sudo tee "$GADGET_SCRIPT" > /dev/null << 'EOF'
 # This script sets up the Raspberry Pi as a USB Mass Storage device
 
 GADGET_PATH="/sys/kernel/config/usb_gadget/samplepi"
-STORAGE_IMG="/home/pi/samplepi_media_storage.img"
+
+# Get current user's home directory
+CURRENT_USER=$(whoami)
+STORAGE_IMG="/home/$CURRENT_USER/samplepi_media_storage.img"
 
 # Check if gadget is already configured
 if [ -d "$GADGET_PATH" ]; then
@@ -232,14 +248,44 @@ EOF
 
 sudo chmod +x "$SYNC_TO_GADGET_SCRIPT"
 
+# Install the toggle script for button-triggered gadget mode
+TOGGLE_SCRIPT="/usr/local/bin/samplepi_toggle_gadget.sh"
+sudo cp $HOME_DIR/SamplePi/usb_gadget/toggle_gadget_button.sh "$TOGGLE_SCRIPT"
+sudo chmod +x "$TOGGLE_SCRIPT"
+echo "USB gadget toggle script installed at $TOGGLE_SCRIPT"
+
+# Create sudoers entry for toggle script (allows user to run it without password)
+SUDOERS_FILE="/etc/sudoers.d/samplepi_toggle"
+if [ ! -f "$SUDOERS_FILE" ]; then
+    echo "$CURRENT_USER ALL=(ALL) NOPASSWD: $TOGGLE_SCRIPT" | sudo tee "$SUDOERS_FILE"
+    sudo chmod 440 "$SUDOERS_FILE"
+    echo "Created sudoers entry for toggle script"
+fi
+
+# Create a symlink in SamplePi directory for easy access
+ln -sf $HOME_DIR/SamplePi/usb_gadget/toggle_gadget_button.sh $HOME_DIR/SamplePi/toggle_gadget.sh 2>/dev/null || true
+
 echo ""
-echo "Setup complete! Please reboot the Raspberry Pi for changes to take effect:"
-echo "  sudo reboot"
+echo "========================================"
+echo "Setup complete!"
+echo "========================================"
 echo ""
-echo "After reboot, when you connect the Pi to a computer via USB, it will appear as a mass storage device containing your media files."
+echo "USB Gadget Mode is now configured for ON-DEMAND use:"
 echo ""
-echo "To safely disconnect from the host computer, run:"
-echo "  sudo /usr/local/bin/eject_usb_gadget.sh"
+echo "1. Start SamplePi application:"
+echo "   sudo systemctl start samplepi"
 echo ""
-echo "To manually sync media files to the gadget storage, run:"
-echo "  sudo /usr/local/bin/sync_media_to_gadget.sh"
+echo "2. To enter USB Gadget Mode:"
+echo "   - Long-press the TOP button (GPIO 5) for 1 second"
+echo "   - Pi will reboot and appear as 'SamplePi Media Storage'"
+echo "   - Connect Pi to computer via USB port"
+echo "   - Transfer files as needed"
+echo ""
+echo "3. To exit USB Gadget Mode:"
+echo "   - Long-press the TOP button again"
+echo "   - Pi will reboot back to normal mode"
+echo "   - Pico keyboard input will work again"
+echo ""
+echo "Manual toggle command:"
+echo "   sudo $TOGGLE_SCRIPT"
+echo ""

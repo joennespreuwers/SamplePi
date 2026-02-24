@@ -11,7 +11,12 @@ ROTARY_CLK_PIN = 12  # Rotary encoder clock (PWM0 - safe pin)
 ROTARY_DT_PIN = 13   # Rotary encoder data (PWM1 - safe pin, was BUTTON_BOTTOM_PIN)
 ROTARY_SW_PIN = 16   # Rotary encoder switch/button (CE2 - safe pin)
 
-# Single button for long press functionality
+# Physical buttons on left side of display (top to bottom)
+BUTTON_TOP_PIN = 5      # Top button (Home / USB Gadget Mode toggle on long press)
+BUTTON_MIDDLE_PIN = 6   # Middle button (Pause/Resume during playback)
+BUTTON_BOTTOM_PIN = 19  # Bottom button (Back / Stop during playback)
+
+# Single button for long press functionality (legacy support)
 LONG_PRESS_BUTTON_PIN = 6  # Middle button position (Next/Action/Long Press)
 
 CAMERA_TRIGGER_PIN = 26  # GPIO output for camera trigger

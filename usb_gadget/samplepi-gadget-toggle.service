@@ -1,0 +1,11 @@
+[Unit]
+Description=SamplePi USB Gadget Mode Toggle Helper
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+
+[Install]
+WantedBy=multi-user.target

@@ -5,3 +5,4 @@ from .recording_toggle_screen import RecordingToggleScreen
 from .confirm_screen import ConfirmScreen
 from .playback_screen import PlaybackScreen
 from .complete_screen import CompleteScreen
+from .usb_gadget_mode_screen import UsbGadgetModeScreen

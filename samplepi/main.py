@@ -5,11 +5,25 @@ import pygame
 import sys
 import os
 import signal
+import subprocess
 from samplepi.config import settings
 from samplepi.state import AppState
 from samplepi.ui.screens import StartScreen
 from samplepi.gpio import RotaryEncoder, CameraTrigger
 from samplepi.gpio.touchscreen import TouchscreenButtons
+
+
+def is_usb_gadget_mode():
+    """Check if USB gadget mode is currently active"""
+    gadget_path = "/sys/kernel/config/usb_gadget/samplepi/UDC"
+    if os.path.exists(gadget_path):
+        try:
+            with open(gadget_path, 'r') as f:
+                content = f.read().strip()
+                return len(content) > 0
+        except Exception:
+            pass
+    return False
 
 
 class MediaPlayerApp:
@@ -38,6 +52,13 @@ class MediaPlayerApp:
         # Initialize state
         self.state = AppState()
 
+        # Check if we're in USB gadget mode
+        self.usb_gadget_mode = is_usb_gadget_mode()
+        if self.usb_gadget_mode:
+            print("USB Gadget Mode detected - starting in gadget mode UI")
+        else:
+            print("Normal mode - starting application")
+
         # Initialize audio player
         from samplepi.audio import AudioPlayer
         self.audio_player = AudioPlayer()
@@ -47,16 +68,83 @@ class MediaPlayerApp:
         self.camera_trigger = CameraTrigger()
         self.touchscreen = TouchscreenButtons()
 
-        # Set up rotary encoder callbacks
-        self.rotary.on_rotate(self.handle_scroll)
-        self.rotary.on_press(self.handle_select)
-        self.rotary.on_long_press(self.handle_long_press)
+        # Set up rotary encoder callbacks (only in normal mode)
+        if not self.usb_gadget_mode:
+            self.rotary.on_rotate(self.handle_scroll)
+            self.rotary.on_press(self.handle_select)
+            self.rotary.on_long_press(self.handle_long_press)
 
-        # Set up long press button callback
-        self.touchscreen.on_long_press(self.handle_long_press)
+        # Set up touchscreen button callbacks
+        if not self.usb_gadget_mode:
+            # Normal mode callbacks
+            self.touchscreen.on_top(self.handle_top_button)
+            self.touchscreen.on_middle(self.handle_middle_button)
+            self.touchscreen.on_bottom(self.handle_bottom_button)
+            self.touchscreen.on_top_long_press(self.handle_usb_gadget_toggle)
+        else:
+            # Gadget mode callbacks - only top button long press to exit
+            self.touchscreen.on_top_long_press(self.handle_usb_gadget_toggle)
 
-        # Start with home screen
-        self.state.goto_screen(StartScreen(self))
+        # Start with appropriate screen
+        if self.usb_gadget_mode:
+            from samplepi.ui.screens.usb_gadget_mode_screen import UsbGadgetModeScreen
+            self.state.goto_screen(UsbGadgetModeScreen(self))
+        else:
+            self.state.goto_screen(StartScreen(self))
+
+    def handle_usb_gadget_toggle(self):
+        """Handle long press on top button - toggle USB gadget mode"""
+        print("USB Gadget toggle requested...")
+        
+        # Show a brief message before exiting
+        if self.usb_gadget_mode:
+            print("Exiting USB gadget mode...")
+        else:
+            print("Entering USB gadget mode...")
+        
+        # Call the toggle script - use environment variable or default path
+        try:
+            # Get home directory from environment
+            home_dir = os.environ.get('HOME', '/home/pi')
+            toggle_script = os.path.join(home_dir, "SamplePi/usb_gadget/toggle_gadget_button.sh")
+            
+            if os.path.exists(toggle_script):
+                # Run the toggle script in background
+                subprocess.Popen(["sudo", toggle_script])
+            else:
+                # Fallback to system-wide installation
+                toggle_script = "/usr/local/bin/samplepi_toggle_gadget.sh"
+                if os.path.exists(toggle_script):
+                    subprocess.Popen(["sudo", toggle_script])
+                else:
+                    print(f"Toggle script not found at {toggle_script}")
+        except Exception as e:
+            print(f"Error running toggle script: {e}")
+
+    def handle_top_button(self):
+        """Handle top button press - Home / Go to start screen"""
+        if self.state.current_screen and hasattr(self.state.current_screen, 'handle_top_button'):
+            self.state.current_screen.handle_top_button()
+        else:
+            # Go to start screen
+            from samplepi.ui.screens import StartScreen
+            self.state.goto_screen(StartScreen(self))
+
+    def handle_middle_button(self):
+        """Handle middle button press - Context action (Pause/Resume during playback)"""
+        if self.state.current_screen and hasattr(self.state.current_screen, 'handle_middle_button'):
+            self.state.current_screen.handle_middle_button()
+        elif self.state.current_screen and hasattr(self.state.current_screen, 'handle_select'):
+            # Default to select action
+            self.state.current_screen.handle_select()
+
+    def handle_bottom_button(self):
+        """Handle bottom button press - Back / Stop"""
+        if self.state.current_screen and hasattr(self.state.current_screen, 'handle_bottom_button'):
+            self.state.current_screen.handle_bottom_button()
+        elif self.state.current_screen and hasattr(self.state.current_screen, 'handle_long_press'):
+            # Default to long press action (e.g., stop playback)
+            self.state.current_screen.handle_long_press()
 
     def run(self):
         """Main application loop"""
@@ -101,6 +189,14 @@ class MediaPlayerApp:
             self.handle_select()
         elif key == pygame.K_l:  # L = Long press
             self.handle_long_press()
+        elif key == pygame.K_t:  # T = Toggle USB gadget (for testing)
+            self.handle_usb_gadget_toggle()
+        elif key == pygame.K_h:  # H = Home
+            self.handle_top_button()
+        elif key == pygame.K_m:  # M = Middle button
+            self.handle_middle_button()
+        elif key == pygame.K_b:  # B = Bottom button
+            self.handle_bottom_button()
 
     def handle_mouse(self, pos, button):
         """Handle mouse/touch input"""
@@ -140,6 +236,7 @@ class MediaPlayerApp:
         """Clean up resources"""
         self.rotary.cleanup()
         self.camera_trigger.cleanup()
+        self.touchscreen.cleanup()
         pygame.quit()
         sys.exit(0)
 
