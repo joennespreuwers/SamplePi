@@ -51,6 +51,13 @@ class UsbGadgetModeScreen(Screen):
         """Render the USB gadget mode screen"""
         self.screen.fill(settings.COLOR_BACKGROUND)
 
+        # While the toggle script is running, show a waiting screen
+        if getattr(self.app, '_toggle_in_progress', False):
+            self.draw_text("Please wait...", 80, self.font_large, settings.COLOR_HIGHLIGHT)
+            if self.text_visible:
+                self.draw_text("Syncing files", 120, self.font_medium, settings.COLOR_TEXT)
+            return
+
         # Warning bar (rendered first, at top)
         self.draw_text("* Pico keyboard disabled", 5, self.font_small, (255, 100, 100))
 

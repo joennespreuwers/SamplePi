@@ -7,6 +7,7 @@ import os
 import pathlib
 import signal
 import subprocess
+import threading
 from samplepi.config import settings
 from samplepi.state import AppState
 from samplepi.ui.screens import StartScreen
@@ -53,6 +54,10 @@ class MediaPlayerApp:
         # Initialize state
         self.state = AppState()
 
+        # Async toggle state (set on background thread, consumed on main thread)
+        self._toggle_in_progress = False
+        self._toggle_done = False
+
         # Check if we're in USB gadget mode
         self.usb_gadget_mode = is_usb_gadget_mode()
         if self.usb_gadget_mode:
@@ -94,32 +99,31 @@ class MediaPlayerApp:
             self.state.goto_screen(StartScreen(self))
 
     def handle_usb_gadget_toggle(self):
-        """Handle long press on top button - toggle USB gadget mode"""
-        print("USB Gadget toggle requested...")
-        
-        # Show a brief message before exiting
-        if self.usb_gadget_mode:
-            print("Exiting USB gadget mode...")
-        else:
-            print("Entering USB gadget mode...")
-        
-        # Call the toggle script
-        try:
-            home_dir = str(pathlib.Path.home())
-            toggle_script = os.path.join(home_dir, "SamplePi/usb_gadget/toggle_gadget_button.sh")
+        """Handle long press on top button - toggle USB gadget mode (no reboot)"""
+        if self._toggle_in_progress:
+            return
 
-            if not os.path.exists(toggle_script):
-                # Fallback to system-wide installation
-                toggle_script = "/usr/local/bin/samplepi_toggle_gadget.sh"
+        home_dir = str(pathlib.Path.home())
+        toggle_script = os.path.join(home_dir, "SamplePi/usb_gadget/toggle_gadget_button.sh")
+        if not os.path.exists(toggle_script):
+            toggle_script = "/usr/local/bin/samplepi_toggle_gadget.sh"
+        if not os.path.exists(toggle_script):
+            print("Toggle script not found")
+            return
 
-            if os.path.exists(toggle_script):
-                subprocess.Popen(["sudo", toggle_script])
-                # Shut down the app cleanly while the system prepares to reboot
-                self.running = False
-            else:
-                print(f"Toggle script not found at {toggle_script}")
-        except Exception as e:
-            print(f"Error running toggle script: {e}")
+        self._toggle_in_progress = True
+        print(f"USB Gadget toggle started ({'disable' if self.usb_gadget_mode else 'enable'})...")
+
+        def run_toggle():
+            try:
+                subprocess.run(["sudo", toggle_script], check=False)
+            except Exception as e:
+                print(f"Error running toggle: {e}")
+            finally:
+                self._toggle_in_progress = False
+                self._toggle_done = True
+
+        threading.Thread(target=run_toggle, daemon=True).start()
 
     def handle_top_button(self):
         """Handle top button press - Home / Go to start screen"""
@@ -222,6 +226,18 @@ class MediaPlayerApp:
 
     def update(self):
         """Update application state"""
+        # Handle toggle completion on the main thread (pygame is not thread-safe)
+        if self._toggle_done:
+            self._toggle_done = False
+            self.usb_gadget_mode = is_usb_gadget_mode()
+            print(f"Toggle complete. Gadget mode: {'on' if self.usb_gadget_mode else 'off'}")
+            from samplepi.ui.screens.usb_gadget_mode_screen import UsbGadgetModeScreen
+            from samplepi.ui.screens import StartScreen
+            if self.usb_gadget_mode:
+                self.state.goto_screen(UsbGadgetModeScreen(self))
+            else:
+                self.state.goto_screen(StartScreen(self))
+
         if self.state.current_screen:
             self.state.current_screen.update()
 

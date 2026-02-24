@@ -76,26 +76,19 @@ sudo rmdir /mnt/gadget_temp
 
 echo "Mass storage image created successfully."
 
-# Enable dwc2 overlay in config.txt
-CONFIG_FILE="/boot/config.txt"
+# Enable dwc2 overlay in config.txt (one-time hardware config, requires one reboot)
+# After this reboot, toggle_gadget_button.sh activates/deactivates the gadget at runtime
+# with no further reboots needed.
+if [ -f "/boot/firmware/config.txt" ]; then
+    CONFIG_FILE="/boot/firmware/config.txt"
+else
+    CONFIG_FILE="/boot/config.txt"
+fi
 if ! grep -q "dtoverlay=dwc2" "$CONFIG_FILE"; then
     echo "dtoverlay=dwc2" | sudo tee -a "$CONFIG_FILE"
-    echo "Added dwc2 overlay to config.txt"
+    echo "Added dtoverlay=dwc2 to $CONFIG_FILE (reboot required once)"
 else
-    echo "dwc2 overlay already present in config.txt"
-fi
-
-# Modify cmdline.txt to load dwc2 module
-CMDLINE_FILE="/boot/cmdline.txt"
-if ! grep -q "modules-load=dwc2,g_mass_storage" "$CMDLINE_FILE"; then
-    # Backup original cmdline.txt
-    sudo cp "$CMDLINE_FILE" "${CMDLINE_FILE}.backup"
-
-    # Add modules-load parameter
-    sudo sed -i '1s/$/ modules-load=dwc2,g_mass_storage/' "$CMDLINE_FILE"
-    echo "Modified cmdline.txt to load USB gadget modules"
-else
-    echo "USB gadget modules already loaded in cmdline.txt"
+    echo "dtoverlay=dwc2 already present in $CONFIG_FILE"
 fi
 
 # Create the USB gadget configuration script
@@ -155,99 +148,6 @@ ls /sys/class/udc | sudo tee UDC
 echo "USB Mass Storage Gadget enabled!"
 EOF
 
-# Bake in the actual home directory (script runs as root via systemd, whoami would return root)
-sudo sed -i "s|SAMPLEPI_HOME_DIR|${HOME_DIR}|g" "$GADGET_SCRIPT"
-
-# Make the script executable
-sudo chmod +x "$GADGET_SCRIPT"
-
-# Create a systemd service to start the gadget at boot
-SERVICE_FILE="/etc/systemd/system/usb-gadget.service"
-sudo tee "$SERVICE_FILE" > /dev/null << 'EOF'
-[Unit]
-Description=SamplePi USB Mass Storage Gadget
-After=multi-user.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/local/bin/configure_usb_gadget.sh
-ExecStop=/bin/sh -c 'echo "" > /sys/kernel/config/usb_gadget/samplepi/UDC 2>/dev/null || true'
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable the service
-sudo systemctl enable usb-gadget.service
-
-echo "USB gadget service created and enabled."
-
-# Copy the autosync service file
-sudo cp $HOME_DIR/SamplePi/usb_gadget/samplepi-gadget-sync.service /etc/systemd/system/
-sudo systemctl enable samplepi-gadget-sync.service
-
-echo "USB gadget auto-sync service created and enabled."
-
-# Update the main SamplePi service to use production media paths
-MAIN_SERVICE_FILE="/etc/systemd/system/samplepi.service"
-if [ -f "$MAIN_SERVICE_FILE" ]; then
-    # Backup original service file
-    sudo cp "$MAIN_SERVICE_FILE" "${MAIN_SERVICE_FILE}.backup"
-
-    # Update the service file to include environment variable for production media
-    sudo sed -i "s|ExecStart=.*|ExecStart=$HOME_DIR/SamplePi/.venv/bin/python3 -m samplepi.main|" "$MAIN_SERVICE_FILE"
-    # Add environment variable if not already present
-    if ! grep -q "MEDIA_PATH_TYPE=production" "$MAIN_SERVICE_FILE"; then
-        sudo sed -i '/\[Service\]/a Environment="MEDIA_PATH_TYPE=production"' "$MAIN_SERVICE_FILE"
-    fi
-
-    # Reload systemd to pick up changes
-    sudo systemctl daemon-reload
-    echo "Updated main SamplePi service to use production media paths"
-else
-    echo "Warning: Main samplepi.service file not found at $MAIN_SERVICE_FILE"
-    echo "If you have the service installed, please update it to include MEDIA_PATH_TYPE=production"
-fi
-
-# Create a script to safely eject the USB gadget from the Pi side
-EJECT_SCRIPT="/usr/local/bin/eject_usb_gadget.sh"
-sudo tee "$EJECT_SCRIPT" > /dev/null << EOF
-#!/bin/bash
-
-# Safely disable USB gadget to allow safe removal from host computer
-
-echo "Disabling USB Mass Storage Gadget..."
-echo "" | sudo tee /sys/kernel/config/usb_gadget/samplepi/UDC 2>/dev/null || true
-
-sleep 2
-
-# Sync gadget storage back to main directories
-$HOME_DIR/SamplePi/usb_gadget/autosync_service.sh sync-to-main
-
-echo "USB Mass Storage Gadget disabled. Safe to remove from host computer."
-EOF
-
-sudo chmod +x "$EJECT_SCRIPT"
-
-# Create a script to sync files to the gadget when SamplePi is not running
-SYNC_TO_GADGET_SCRIPT="/usr/local/bin/sync_media_to_gadget.sh"
-sudo tee "$SYNC_TO_GADGET_SCRIPT" > /dev/null << EOF
-#!/bin/bash
-
-# Sync media files from main directories to USB gadget storage
-# Only runs when SamplePi is not running
-
-if pgrep -f "samplepi.main" > /dev/null; then
-    echo "SamplePi is currently running. Please stop it before syncing."
-    exit 1
-fi
-
-$HOME_DIR/SamplePi/usb_gadget/autosync_service.sh sync-to-gadget
-EOF
-
-sudo chmod +x "$SYNC_TO_GADGET_SCRIPT"
-
 # Install the toggle script for button-triggered gadget mode
 TOGGLE_SCRIPT="/usr/local/bin/samplepi_toggle_gadget.sh"
 sudo cp $HOME_DIR/SamplePi/usb_gadget/toggle_gadget_button.sh "$TOGGLE_SCRIPT"
@@ -270,21 +170,14 @@ echo "========================================"
 echo "Setup complete!"
 echo "========================================"
 echo ""
-echo "USB Gadget Mode is now configured for ON-DEMAND use:"
+echo "IMPORTANT: Reboot once now to activate dtoverlay=dwc2:"
+echo "   sudo reboot"
 echo ""
-echo "1. Start SamplePi application:"
-echo "   sudo systemctl start samplepi"
+echo "After that single reboot, USB Gadget Mode toggles instantly (no more reboots):"
 echo ""
-echo "2. To enter USB Gadget Mode:"
-echo "   - Long-press the TOP button (GPIO 5) for 1 second"
-echo "   - Pi will reboot and appear as 'SamplePi Media Storage'"
-echo "   - Connect Pi to computer via USB port"
-echo "   - Transfer files as needed"
-echo ""
-echo "3. To exit USB Gadget Mode:"
-echo "   - Long-press the TOP button again"
-echo "   - Pi will reboot back to normal mode"
-echo "   - Pico keyboard input will work again"
+echo "  - Long-press TOP button (GPIO 5) to enable USB Gadget Mode"
+echo "    Pi appears as 'SamplePi Media Storage' on your computer"
+echo "  - Long-press TOP button again to disable and sync files back"
 echo ""
 echo "Manual toggle command:"
 echo "   sudo $TOGGLE_SCRIPT"
