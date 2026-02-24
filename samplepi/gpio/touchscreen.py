@@ -127,11 +127,9 @@ class TouchscreenButtons:
 
     # Legacy callback support
     def on_long_press(self, callback):
-        """Register callback for long press (legacy - maps to middle button)"""
+        """Register callback for long press (legacy - maps to middle button press)"""
         self._on_long_press_callback = callback
-        # Also map to middle button for backward compatibility
-        if self.middle_button:
-            self.middle_button.when_held = callback
+        self._on_middle_callback = callback
 
     def cleanup(self):
         """Clean up GPIO resources"""

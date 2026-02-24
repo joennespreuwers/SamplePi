@@ -16,8 +16,6 @@ BUTTON_TOP_PIN = 5      # Top button (Home / USB Gadget Mode toggle on long pres
 BUTTON_MIDDLE_PIN = 6   # Middle button (Pause/Resume during playback)
 BUTTON_BOTTOM_PIN = 19  # Bottom button (Back / Stop during playback)
 
-# Single button for long press functionality (legacy support)
-LONG_PRESS_BUTTON_PIN = 6  # Middle button position (Next/Action/Long Press)
 
 CAMERA_TRIGGER_PIN = 26  # GPIO output for camera trigger
 CAMERA_TRIGGER_DURATION = 0.1  # 100ms pulse duration
@@ -32,7 +30,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 
 # Check if running in production mode
 if os.environ.get('MEDIA_PATH_TYPE') == 'production':
-    MEDIA_ROOT = "/home/pi/media"  # Production media path
+    MEDIA_ROOT = os.path.join(os.path.expanduser("~"), "media")
 else:
     MEDIA_ROOT = os.path.join(PROJECT_ROOT, "test_media")  # For development
 

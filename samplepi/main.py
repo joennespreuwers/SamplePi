@@ -4,6 +4,7 @@
 import pygame
 import sys
 import os
+import pathlib
 import signal
 import subprocess
 from samplepi.config import settings
@@ -102,22 +103,21 @@ class MediaPlayerApp:
         else:
             print("Entering USB gadget mode...")
         
-        # Call the toggle script - use environment variable or default path
+        # Call the toggle script
         try:
-            # Get home directory from environment
-            home_dir = os.environ.get('HOME', '/home/pi')
+            home_dir = str(pathlib.Path.home())
             toggle_script = os.path.join(home_dir, "SamplePi/usb_gadget/toggle_gadget_button.sh")
-            
-            if os.path.exists(toggle_script):
-                # Run the toggle script in background
-                subprocess.Popen(["sudo", toggle_script])
-            else:
+
+            if not os.path.exists(toggle_script):
                 # Fallback to system-wide installation
                 toggle_script = "/usr/local/bin/samplepi_toggle_gadget.sh"
-                if os.path.exists(toggle_script):
-                    subprocess.Popen(["sudo", toggle_script])
-                else:
-                    print(f"Toggle script not found at {toggle_script}")
+
+            if os.path.exists(toggle_script):
+                subprocess.Popen(["sudo", toggle_script])
+                # Shut down the app cleanly while the system prepares to reboot
+                self.running = False
+            else:
+                print(f"Toggle script not found at {toggle_script}")
         except Exception as e:
             print(f"Error running toggle script: {e}")
 

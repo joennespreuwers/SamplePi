@@ -6,16 +6,24 @@
 
 set -e
 
-CONFIG_FILE="/boot/config.txt"
-CONFIG_BACKUP="/boot/config.txt.backup"
 GADGET_SERVICE="usb-gadget.service"
 GADGET_SCRIPT="/usr/local/bin/configure_usb_gadget.sh"
 
-# Get current user's home directory
-CURRENT_USER=$(whoami)
-HOME_DIR="/home/$CURRENT_USER"
+# Get the actual (non-root) user when invoked via sudo
+CURRENT_USER="${SUDO_USER:-$(logname 2>/dev/null || whoami)}"
+HOME_DIR=$(getent passwd "$CURRENT_USER" | cut -d: -f6)
 STORAGE_IMG="$HOME_DIR/samplepi_media_storage.img"
 MEDIA_DIR="$HOME_DIR/media"
+
+# Detect boot config location (Pi OS Bookworm uses /boot/firmware/)
+if [ -f "/boot/firmware/config.txt" ]; then
+    CONFIG_FILE="/boot/firmware/config.txt"
+    CMDLINE_FILE="/boot/firmware/cmdline.txt"
+else
+    CONFIG_FILE="/boot/config.txt"
+    CMDLINE_FILE="/boot/cmdline.txt"
+fi
+CONFIG_BACKUP="${CONFIG_FILE}.backup"
 
 LOG_FILE="/var/log/samplepi-gadget-toggle.log"
 
@@ -62,10 +70,9 @@ enable_gadget_mode() {
     fi
     
     # Add modules-load to cmdline.txt if not present
-    CMDLINE_FILE="/boot/cmdline.txt"
     if ! grep -q "modules-load=dwc2" "$CMDLINE_FILE"; then
         cp "$CMDLINE_FILE" "${CMDLINE_FILE}.backup"
-        sed -i "s/$/ modules-load=dwc2,g_mass_storage/" "$CMDLINE_FILE"
+        sed -i '1s/$/ modules-load=dwc2,g_mass_storage/' "$CMDLINE_FILE"
         log "Added modules-load to cmdline.txt"
     fi
     
@@ -99,8 +106,7 @@ enable_gadget_mode() {
         cat > "$GADGET_SCRIPT" << 'GADGET_EOF'
 #!/bin/bash
 GADGET_PATH="/sys/kernel/config/usb_gadget/samplepi"
-CURRENT_USER=$(whoami)
-STORAGE_IMG="/home/$CURRENT_USER/samplepi_media_storage.img"
+STORAGE_IMG="SAMPLEPI_HOME_DIR/samplepi_media_storage.img"
 
 if [ -d "$GADGET_PATH" ]; then
     exit 0
@@ -133,9 +139,10 @@ ls /sys/class/udc > UDC
 
 echo "USB Mass Storage Gadget enabled!"
 GADGET_EOF
+        sed -i "s|SAMPLEPI_HOME_DIR|${HOME_DIR}|g" "$GADGET_SCRIPT"
         chmod +x "$GADGET_SCRIPT"
     fi
-    
+
     # Enable and start the gadget service
     systemctl enable "$GADGET_SERVICE" 2>/dev/null || true
     systemctl start "$GADGET_SERVICE" 2>/dev/null || true
@@ -175,7 +182,6 @@ disable_gadget_mode() {
     fi
     
     # Remove modules-load from cmdline.txt
-    CMDLINE_FILE="/boot/cmdline.txt"
     if grep -q "modules-load=dwc2" "$CMDLINE_FILE"; then
         sed -i 's/ modules-load=dwc2,g_mass_storage//' "$CMDLINE_FILE"
         log "Removed modules-load from cmdline.txt"

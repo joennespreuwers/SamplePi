@@ -92,7 +92,7 @@ if ! grep -q "modules-load=dwc2,g_mass_storage" "$CMDLINE_FILE"; then
     sudo cp "$CMDLINE_FILE" "${CMDLINE_FILE}.backup"
 
     # Add modules-load parameter
-    sudo sed -i "s/$/ modules-load=dwc2,g_mass_storage/" "$CMDLINE_FILE"
+    sudo sed -i '1s/$/ modules-load=dwc2,g_mass_storage/' "$CMDLINE_FILE"
     echo "Modified cmdline.txt to load USB gadget modules"
 else
     echo "USB gadget modules already loaded in cmdline.txt"
@@ -107,10 +107,7 @@ sudo tee "$GADGET_SCRIPT" > /dev/null << 'EOF'
 # This script sets up the Raspberry Pi as a USB Mass Storage device
 
 GADGET_PATH="/sys/kernel/config/usb_gadget/samplepi"
-
-# Get current user's home directory
-CURRENT_USER=$(whoami)
-STORAGE_IMG="/home/$CURRENT_USER/samplepi_media_storage.img"
+STORAGE_IMG="SAMPLEPI_HOME_DIR/samplepi_media_storage.img"
 
 # Check if gadget is already configured
 if [ -d "$GADGET_PATH" ]; then
@@ -157,6 +154,9 @@ ls /sys/class/udc | sudo tee UDC
 
 echo "USB Mass Storage Gadget enabled!"
 EOF
+
+# Bake in the actual home directory (script runs as root via systemd, whoami would return root)
+sudo sed -i "s|SAMPLEPI_HOME_DIR|${HOME_DIR}|g" "$GADGET_SCRIPT"
 
 # Make the script executable
 sudo chmod +x "$GADGET_SCRIPT"

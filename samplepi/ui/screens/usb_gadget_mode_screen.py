@@ -50,33 +50,27 @@ class UsbGadgetModeScreen(Screen):
     def render(self):
         """Render the USB gadget mode screen"""
         self.screen.fill(settings.COLOR_BACKGROUND)
-        
+
+        # Warning bar (rendered first, at top)
+        self.draw_text("* Pico keyboard disabled", 5, self.font_small, (255, 100, 100))
+
         # Title
-        self.draw_text("USB TRANSFER MODE", 40, self.font_large, settings.COLOR_HIGHLIGHT)
-        
+        self.draw_text("USB TRANSFER MODE", 28, self.font_large, settings.COLOR_HIGHLIGHT)
+
         # Status indicator
-        y = 90
-        self.draw_text("● ACTIVE", y, self.font_medium, (0, 255, 0))
-        
+        self.draw_text("● ACTIVE", 60, self.font_medium, (0, 255, 0))
+
         # Instructions
-        y = 130
+        y = 95
         self.draw_text("Connect Pi to computer", y, self.font_small)
-        y += 25
+        y += 22
         self.draw_text("via USB port", y, self.font_small)
-        
-        y = 180
+
+        y = 145
         self.draw_text("Transfer files to/from", y, self.font_small)
-        y += 25
+        y += 22
         self.draw_text("'SamplePi Media Storage'", y, self.font_small, settings.COLOR_HIGHLIGHT)
-        
-        # Blinking hint
-        y = 220
+
+        # Blinking hint at bottom
         if self.text_visible:
-            self.draw_text("Press TOP button (long)", y, self.font_small, settings.COLOR_BUTTON_ACTIVE)
-            y += 20
-            self.draw_text("to exit USB mode", y, self.font_small, settings.COLOR_BUTTON_ACTIVE)
-        
-        # Warning
-        y = 20
-        warning_text = "* Pico keyboard disabled in this mode"
-        self.draw_text(warning_text, y, self.font_small, (255, 100, 100))
+            self.draw_text("Hold TOP button to exit", 195, self.font_small, settings.COLOR_BUTTON_ACTIVE)
