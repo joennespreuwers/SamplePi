@@ -184,7 +184,7 @@ sudo systemctl enable usb-gadget.service
 echo "USB gadget service created and enabled."
 
 # Copy the autosync service file
-sudo cp /home/pi/SamplePi/usb_gadget/samplepi-gadget-sync.service /etc/systemd/system/
+sudo cp $HOME_DIR/SamplePi/usb_gadget/samplepi-gadget-sync.service /etc/systemd/system/
 sudo systemctl enable samplepi-gadget-sync.service
 
 echo "USB gadget auto-sync service created and enabled."
@@ -194,14 +194,14 @@ MAIN_SERVICE_FILE="/etc/systemd/system/samplepi.service"
 if [ -f "$MAIN_SERVICE_FILE" ]; then
     # Backup original service file
     sudo cp "$MAIN_SERVICE_FILE" "${MAIN_SERVICE_FILE}.backup"
-    
+
     # Update the service file to include environment variable for production media
-    sudo sed -i 's|ExecStart=.*|ExecStart=/home/pi/SamplePi/.venv/bin/python3 -m samplepi.main|' "$MAIN_SERVICE_FILE"
+    sudo sed -i "s|ExecStart=.*|ExecStart=$HOME_DIR/SamplePi/.venv/bin/python3 -m samplepi.main|" "$MAIN_SERVICE_FILE"
     # Add environment variable if not already present
     if ! grep -q "MEDIA_PATH_TYPE=production" "$MAIN_SERVICE_FILE"; then
         sudo sed -i '/\[Service\]/a Environment="MEDIA_PATH_TYPE=production"' "$MAIN_SERVICE_FILE"
     fi
-    
+
     # Reload systemd to pick up changes
     sudo systemctl daemon-reload
     echo "Updated main SamplePi service to use production media paths"
@@ -212,7 +212,7 @@ fi
 
 # Create a script to safely eject the USB gadget from the Pi side
 EJECT_SCRIPT="/usr/local/bin/eject_usb_gadget.sh"
-sudo tee "$EJECT_SCRIPT" > /dev/null << 'EOF'
+sudo tee "$EJECT_SCRIPT" > /dev/null << EOF
 #!/bin/bash
 
 # Safely disable USB gadget to allow safe removal from host computer
@@ -223,7 +223,7 @@ echo "" | sudo tee /sys/kernel/config/usb_gadget/samplepi/UDC 2>/dev/null || tru
 sleep 2
 
 # Sync gadget storage back to main directories
-/home/pi/SamplePi/usb_gadget/autosync_service.sh sync-to-main
+$HOME_DIR/SamplePi/usb_gadget/autosync_service.sh sync-to-main
 
 echo "USB Mass Storage Gadget disabled. Safe to remove from host computer."
 EOF
@@ -232,7 +232,7 @@ sudo chmod +x "$EJECT_SCRIPT"
 
 # Create a script to sync files to the gadget when SamplePi is not running
 SYNC_TO_GADGET_SCRIPT="/usr/local/bin/sync_media_to_gadget.sh"
-sudo tee "$SYNC_TO_GADGET_SCRIPT" > /dev/null << 'EOF'
+sudo tee "$SYNC_TO_GADGET_SCRIPT" > /dev/null << EOF
 #!/bin/bash
 
 # Sync media files from main directories to USB gadget storage
@@ -243,7 +243,7 @@ if pgrep -f "samplepi.main" > /dev/null; then
     exit 1
 fi
 
-/home/pi/SamplePi/usb_gadget/autosync_service.sh sync-to-gadget
+$HOME_DIR/SamplePi/usb_gadget/autosync_service.sh sync-to-gadget
 EOF
 
 sudo chmod +x "$SYNC_TO_GADGET_SCRIPT"

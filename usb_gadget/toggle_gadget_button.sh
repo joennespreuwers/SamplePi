@@ -99,7 +99,8 @@ enable_gadget_mode() {
         cat > "$GADGET_SCRIPT" << 'GADGET_EOF'
 #!/bin/bash
 GADGET_PATH="/sys/kernel/config/usb_gadget/samplepi"
-STORAGE_IMG="/home/pi/samplepi_media_storage.img"
+CURRENT_USER=$(whoami)
+STORAGE_IMG="/home/$CURRENT_USER/samplepi_media_storage.img"
 
 if [ -d "$GADGET_PATH" ]; then
     exit 0

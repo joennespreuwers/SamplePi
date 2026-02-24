@@ -6,11 +6,15 @@
 
 set -e  # Exit on any error
 
+# Get current user's home directory
+CURRENT_USER=$(whoami)
+HOME_DIR="/home/$CURRENT_USER"
+
 CONFIG_FILE="/boot/config.txt"
 CONFIG_BACKUP="/boot/config.txt.backup"
 GADGET_SERVICE="usb-gadget.service"
 GADGET_SCRIPT="/usr/local/bin/configure_usb_gadget.sh"
-STORAGE_IMG="/home/pi/samplepi_media_storage.img"
+STORAGE_IMG="$HOME_DIR/samplepi_media_storage.img"
 
 # Colors for output
 RED='\033[0;31m'
@@ -98,17 +102,17 @@ enable_gadget_mode() {
     # Create storage image if it doesn't exist
     if [ ! -f "$STORAGE_IMG" ]; then
         log_info "Creating mass storage image..."
-        
-        MEDIA_ROOT="/home/pi/media"
+
+        MEDIA_ROOT="$HOME_DIR/media"
         mkdir -p "$MEDIA_ROOT/samples" "$MEDIA_ROOT/test_wavs"
-        
+
         CURRENT_SIZE=$(du -sb "$MEDIA_ROOT" 2>/dev/null | cut -f1 || echo "0")
         IMAGE_SIZE=$((CURRENT_SIZE + 100*1024*1024))
         IMAGE_SIZE_MB=$((IMAGE_SIZE / 1024 / 1024 + 100))
-        
+
         dd if=/dev/zero of="$STORAGE_IMG" bs=1M count=$IMAGE_SIZE_MB
         mkfs.vfat "$STORAGE_IMG"
-        
+
         # Copy existing media to image
         TEMP_MOUNT=$(mktemp -d)
         mount -o loop "$STORAGE_IMG" "$TEMP_MOUNT"
@@ -116,17 +120,18 @@ enable_gadget_mode() {
         cp -r "$MEDIA_ROOT/test_wavs" "$TEMP_MOUNT/" 2>/dev/null || true
         umount "$TEMP_MOUNT"
         rmdir "$TEMP_MOUNT"
-        
+
         log_info "Mass storage image created (${IMAGE_SIZE_MB}MB)"
     fi
-    
+
     # Create gadget script if it doesn't exist
     if [ ! -f "$GADGET_SCRIPT" ]; then
         log_info "Creating USB gadget configuration script..."
         cat > "$GADGET_SCRIPT" << 'GADGET_EOF'
 #!/bin/bash
 GADGET_PATH="/sys/kernel/config/usb_gadget/samplepi"
-STORAGE_IMG="/home/pi/samplepi_media_storage.img"
+CURRENT_USER=$(whoami)
+STORAGE_IMG="/home/$CURRENT_USER/samplepi_media_storage.img"
 
 if [ -d "$GADGET_PATH" ]; then
     echo "USB gadget already configured"
@@ -219,10 +224,10 @@ disable_gadget_mode() {
         if mount -o loop "$STORAGE_IMG" "$TEMP_MOUNT" 2>/dev/null; then
             # Copy files from gadget to main media directory
             if [ -d "$TEMP_MOUNT/samples" ]; then
-                cp -ru "$TEMP_MOUNT/samples/" "/home/pi/media/samples/" 2>/dev/null || true
+                cp -ru "$TEMP_MOUNT/samples/" "$HOME_DIR/media/samples/" 2>/dev/null || true
             fi
             if [ -d "$TEMP_MOUNT/test_wavs" ]; then
-                cp -ru "$TEMP_MOUNT/test_wavs/" "/home/pi/media/test_wavs/" 2>/dev/null || true
+                cp -ru "$TEMP_MOUNT/test_wavs/" "$HOME_DIR/media/test_wavs/" 2>/dev/null || true
             fi
             umount "$TEMP_MOUNT" 2>/dev/null || true
             log_info "Files synced successfully"
