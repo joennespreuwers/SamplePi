@@ -1,0 +1,14 @@
+[Unit]
+Description=SamplePi USB sync for %i
+# Prevent hammering if the device disappears quickly
+After=dev-%i.device
+
+[Service]
+Type=oneshot
+# Run as root so we can mount; usb_sync.sh writes to /home/pi/media
+ExecStart=/home/pi/SamplePi/usb_mount/usb_sync.sh %i
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+# Not enabled manually; fired by udev

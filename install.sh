@@ -32,7 +32,8 @@ sudo apt-get install -y -qq \
     git \
     alsa-utils \
     unzip \
-    cmake
+    cmake \
+    rsync
 
 # Configure Waveshare 3.2" LCD
 echo "[3/9] Configuring Waveshare 3.2\" LCD display..."
@@ -76,8 +77,8 @@ if [ -d "$INSTALL_DIR" ]; then
     cd "$INSTALL_DIR"
     git pull
 else
-    echo "[4/9] Cloning SamplePi repository..."
-    git clone https://github.com/joennespreuwers/SamplePi.git "$INSTALL_DIR"
+    echo "[4/9] Cloning SamplePi repository (picoKeyboard branch)..."
+    git clone --branch picoKeyboard https://github.com/joennespreuwers/SamplePi.git "$INSTALL_DIR"
     cd "$INSTALL_DIR"
 fi
 
@@ -151,12 +152,28 @@ EOF
     echo "Auto-startx configured in .bash_profile"
 fi
 
-# Install systemd service
-echo "[9/9] Installing systemd service..."
+# Install main systemd service
+echo "[9/11] Installing main systemd service..."
 sed -e "s|%USER%|$USER|g" -e "s|%HOME%|$HOME|g" samplepi.service > /tmp/samplepi.service
 sudo mv /tmp/samplepi.service /etc/systemd/system/samplepi.service
+
+# Install upload server service
+echo "[10/11] Installing upload server service..."
+sed -e "s|%USER%|$USER|g" -e "s|%HOME%|$HOME|g" upload_server/samplepi-upload.service > /tmp/samplepi-upload.service
+sudo mv /tmp/samplepi-upload.service /etc/systemd/system/samplepi-upload.service
+
+# Install USB auto-mount
+echo "[11/11] Installing USB auto-mount..."
+chmod +x usb_mount/usb_sync.sh
+sudo cp usb_mount/99-samplepi-usb.rules /etc/udev/rules.d/
+# Patch service to use actual install path
+sed "s|/home/pi/SamplePi|$INSTALL_DIR|g" usb_mount/samplepi-usb@.service > /tmp/samplepi-usb@.service
+sudo mv /tmp/samplepi-usb@.service /etc/systemd/system/samplepi-usb@.service
+sudo udevadm control --reload-rules
+
 sudo systemctl daemon-reload
 sudo systemctl enable samplepi.service
+sudo systemctl enable samplepi-upload.service
 
 # Install desktop autostart
 echo "Installing desktop autostart..."
@@ -173,20 +190,17 @@ echo ""
 echo "1. Reboot to apply audio configuration:"
 echo "   sudo reboot"
 echo ""
-echo "2. After reboot, the service will start automatically"
+echo "2. After reboot, services start automatically"
 echo ""
-echo "Manual control:"
-echo "  Start:   sudo systemctl start samplepi"
-echo "  Stop:    sudo systemctl stop samplepi"
-echo "  Status:  sudo systemctl status samplepi"
-echo "  Logs:    sudo journalctl -u samplepi -f"
+echo "Main app:"
+echo "  sudo systemctl status samplepi"
+echo "  sudo journalctl -u samplepi -f"
 echo ""
-echo "Test manually (in desktop mode):"
-echo "  cd $INSTALL_DIR"
-echo "  source .venv/bin/activate"
-echo "  python3 -m samplepi.main"
+echo "Upload server (http://<pi-ip>:8080):"
+echo "  sudo systemctl status samplepi-upload"
+echo "  sudo journalctl -u samplepi-upload -f"
 echo ""
-echo "Configuration files:"
-echo "  Audio/GPIO settings: $INSTALL_DIR/samplepi/config/settings.py"
-echo "  Media directory: $INSTALL_DIR/test_media/"
+echo "USB auto-mount:"
+echo "  Plug in a USB drive with test_wavs/ and/or samples/ folders"
+echo "  sudo journalctl -f -t samplepi-usb"
 echo ""

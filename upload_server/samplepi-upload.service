@@ -1,0 +1,15 @@
+[Unit]
+Description=SamplePi Web Upload Server
+After=network.target
+
+[Service]
+Type=simple
+User=%USER%
+WorkingDirectory=%HOME%/SamplePi
+Environment="MEDIA_PATH_TYPE=production"
+ExecStart=%HOME%/SamplePi/.venv/bin/python3 -m upload_server.server
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,5 @@
+# Trigger WAV sync when a USB storage partition is inserted.
+# The kernel device name (e.g. "sda1") is passed as the systemd instance name.
+ACTION=="add", SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", ENV{ID_BUS}=="usb", \
+    ENV{ID_FS_USAGE}=="filesystem", \
+    RUN+="/bin/systemctl start samplepi-usb@%k.service"
