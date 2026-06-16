@@ -20,11 +20,11 @@ if ! grep -q "Raspberry Pi" /proc/cpuinfo 2>/dev/null; then
 fi
 
 # Update system
-echo "[1/9] Updating system packages..."
+echo "[1/11] Updating system packages..."
 sudo apt-get update -qq
 
 # Install system dependencies
-echo "[2/9] Installing system dependencies..."
+echo "[2/11] Installing system dependencies..."
 sudo apt-get install -y -qq \
     python3-pip \
     python3-venv \
@@ -36,7 +36,7 @@ sudo apt-get install -y -qq \
     rsync
 
 # Configure Waveshare 3.2" LCD
-echo "[3/9] Configuring Waveshare 3.2\" LCD display..."
+echo "[3/11] Configuring Waveshare 3.2\" LCD display..."
 if [ ! -f /boot/overlays/waveshare32b.dtbo ]; then
     cd /tmp
     sudo wget -q https://files.waveshare.com/wiki/common/Waveshare32b.zip
@@ -73,23 +73,23 @@ fi
 # Clone or update repository
 INSTALL_DIR="$HOME/SamplePi"
 if [ -d "$INSTALL_DIR" ]; then
-    echo "[4/9] Updating existing SamplePi installation..."
+    echo "[4/11] Updating existing SamplePi installation..."
     cd "$INSTALL_DIR"
     git pull
 else
-    echo "[4/9] Cloning SamplePi repository (picoKeyboard branch)..."
-    git clone --branch picoKeyboard https://github.com/joennespreuwers/SamplePi.git "$INSTALL_DIR"
+    echo "[4/11] Cloning SamplePi repository (fb-direct branch)..."
+    git clone --branch fb-direct https://github.com/joennespreuwers/SamplePi.git "$INSTALL_DIR"
     cd "$INSTALL_DIR"
 fi
 
 # Create virtual environment
-echo "[5/9] Setting up Python virtual environment..."
+echo "[5/11] Setting up Python virtual environment..."
 if [ ! -d ".venv" ]; then
     python3 -m venv .venv
 fi
 
 # Activate virtual environment and install Python packages
-echo "[6/9] Installing Python dependencies..."
+echo "[6/11] Installing Python dependencies..."
 source .venv/bin/activate
 pip install -q --upgrade pip
 pip install -q -r requirements.txt
@@ -99,7 +99,7 @@ SITE_PACKAGES=$(find .venv/lib -type d -name "site-packages" | head -n 1)
 echo "/usr/lib/python3/dist-packages" > "$SITE_PACKAGES/system-packages.pth"
 
 # Configure HiFiBerry (if not already configured)
-echo "[7/9] Configuring HiFiBerry DAC..."
+echo "[7/11] Configuring HiFiBerry DAC..."
 if ! grep -q "dtoverlay=hifiberry-dacplus" /boot/firmware/config.txt 2>/dev/null; then
     echo "dtoverlay=hifiberry-dacplus" | sudo tee -a /boot/firmware/config.txt
     echo "HiFiBerry configuration added to config.txt"
@@ -121,36 +121,9 @@ ctl.!default {
 EOF
 fi
 
-# Configure X11 for framebuffer display
-echo "[8/9] Configuring X11 for LCD display..."
-sudo mkdir -p /usr/share/X11/xorg.conf.d
-if [ ! -f /usr/share/X11/xorg.conf.d/99-fbturbo.conf ]; then
-    cat << 'EOF' | sudo tee /usr/share/X11/xorg.conf.d/99-fbturbo.conf
-Section "Device"
-        Identifier      "Allwinner A10/A13 FBDEV"
-        Driver          "fbturbo"
-        Option          "fbdev" "/dev/fb0"
-        Option          "SwapbuffersWait" "true"
-EndSection
-EOF
-    echo "X11 framebuffer configuration created"
-fi
-
-# Configure auto-login and startx
-echo "Configuring auto-login and X11 autostart..."
-
-# Set CLI auto-login
-sudo raspi-config nonint do_boot_behaviour B2
-sudo raspi-config nonint do_wayland W1
-
-# Add startx to .bash_profile if not already present
-if ! grep -q "startx" "$HOME/.bash_profile" 2>/dev/null; then
-    cat << 'EOF' >> "$HOME/.bash_profile"
-export FRAMEBUFFER=/dev/fb1
-startx 2> /tmp/xorg_errors
-EOF
-    echo "Auto-startx configured in .bash_profile"
-fi
+# Grant framebuffer + input device access (no X11 needed)
+echo "[8/11] Granting framebuffer/input access to $USER..."
+sudo usermod -aG video,input,tty,render "$USER"
 
 # Install main systemd service
 echo "[9/11] Installing main systemd service..."
@@ -175,11 +148,6 @@ sudo systemctl daemon-reload
 sudo systemctl enable samplepi.service
 sudo systemctl enable samplepi-upload.service
 
-# Install desktop autostart
-echo "Installing desktop autostart..."
-mkdir -p "$HOME/.config/autostart"
-sed -e "s|/home/samplepi|$HOME|g" samplepi-autostart.desktop > "$HOME/.config/autostart/samplepi.desktop"
-
 echo ""
 echo "========================================="
 echo "Installation Complete!"
@@ -187,10 +155,11 @@ echo "========================================="
 echo ""
 echo "Next steps:"
 echo ""
-echo "1. Reboot to apply audio configuration:"
+echo "1. Reboot to apply display/audio config and group membership:"
 echo "   sudo reboot"
 echo ""
-echo "2. After reboot, services start automatically"
+echo "2. After reboot, samplepi renders directly to the LCD framebuffer"
+echo "   (no desktop/X11) and starts automatically as a systemd service."
 echo ""
 echo "Main app:"
 echo "  sudo systemctl status samplepi"

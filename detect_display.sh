@@ -155,7 +155,8 @@ test_display() {
         echo ""
         echo "Or test with SamplePi:"
         echo "  cd $HOME/SamplePi"
-        echo "  SDL_VIDEODRIVER=fbcon SDL_FBDEV=/dev/fb0 python3 -m samplepi.main"
+        echo "  python3 -m samplepi.main   # auto-selects fbcon + /dev/fb1 when no DISPLAY is set"
+        echo "  (override with SAMPLEPI_FBDEV=/dev/fbN if the LCD enumerates differently)"
     else
         echo "  ✗ /dev/fb0 not found - display not configured yet"
     fi

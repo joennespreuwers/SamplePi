@@ -2,6 +2,8 @@
 
 Complete walkthrough for deploying SamplePi to your Raspberry Pi from scratch.
 
+> ⚠️ **Branch note:** The rotary encoder and physical-button wiring described below (Prerequisites, Phase 7.1, Phase 10) is for the **GPIO-direct** input setup used on the `main`/`sidd` branches. If you're on **`picoKeyboard`** (the active branch — see `CLAUDE.md`), the rotary encoder wires to a Raspberry Pi Pico instead, which connects to the Pi over USB as a HID keyboard. For that wiring, see `rotary_encoder_keyboard/WIRING_GUIDE.md` and the "GPIO Pins (picoKeyboard branch)" table in `CLAUDE.md`. There is also no 3-button setup on `picoKeyboard` — only a single long-press button on GPIO 6.
+
 ---
 
 ## 📋 Prerequisites

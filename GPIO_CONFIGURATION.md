@@ -1,5 +1,7 @@
 # GPIO Pin Configuration for SamplePi
 
+> ⚠️ **Branch note:** Everything below describes wiring the rotary encoder **directly to the Raspberry Pi** (GPIO 12/13/16), which applies to the `main`/`sidd` branches. On the active **`picoKeyboard`** branch, the rotary encoder instead wires to a Raspberry Pi Pico, which plugs into the Pi over USB and acts as a HID keyboard — there is no direct RPi GPIO wiring for the encoder. See `rotary_encoder_keyboard/WIRING_GUIDE.md` and `CLAUDE.md` for the correct `picoKeyboard` wiring (encoder → Pico GPIO 2/3/4, single long-press button → RPi GPIO 6, camera trigger → RPi GPIO 26).
+
 ## Overview
 This document describes the GPIO pin configuration for SamplePi to avoid conflicts between the display, touch controller, and input devices.
 

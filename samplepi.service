@@ -1,18 +1,25 @@
 [Unit]
 Description=SamplePi Audio Playback System
-After=graphical.target
-Wants=graphical.target
+After=multi-user.target
+Wants=multi-user.target
 
 [Service]
 Type=simple
 User=%USER%
 WorkingDirectory=%HOME%/SamplePi
-Environment="DISPLAY=:0"
-Environment="XAUTHORITY=/home/%USER%/.Xauthority"
 Environment="MEDIA_PATH_TYPE=production"
+Environment="SDL_VIDEODRIVER=fbcon"
+Environment="SDL_FBDEV=/dev/fb1"
 ExecStart=%HOME%/SamplePi/.venv/bin/python3 -m samplepi.main
 Restart=always
 RestartSec=10
+# Run on the real console so SDL's fbcon driver can read the rotary/Pico
+# keyboard from /dev/input and own the VT (cursor blanking, etc.)
+TTYPath=/dev/tty1
+StandardInput=tty
+StandardOutput=tty
+TTYReset=yes
+TTYVTDisallocate=yes
 
 [Install]
 WantedBy=multi-user.target

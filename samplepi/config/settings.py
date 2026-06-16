@@ -1,9 +1,16 @@
 """Configuration settings for MediaPlayer"""
 
+import os
+
 # Display settings (Waveshare 3.2" LCD is 320x240)
 DISPLAY_WIDTH = 320
 DISPLAY_HEIGHT = 240
 FPS = 30
+
+# Framebuffer device for direct rendering (no X11/desktop required).
+# The Waveshare SPI LCD typically shows up as /dev/fb1 alongside the
+# Pi's HDMI framebuffer (/dev/fb0). Override with SAMPLEPI_FBDEV if needed.
+FRAMEBUFFER_DEVICE = os.environ.get("SAMPLEPI_FBDEV", "/dev/fb1")
 
 # GPIO Pin assignments (BCM numbering)
 # Using pins that don't conflict with SPI display and XPT2046 touch controller
@@ -22,7 +29,6 @@ AUDIO_SAMPLE_RATE = 44100
 AUDIO_BUFFER_SIZE = 2048
 
 # File paths
-import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Check if running in production mode

@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Active Branch
 
-Currently working on **`picoKeyboard`** — Raspberry Pi Pico acts as USB HID keyboard for rotary encoder input. No USB gadget/dual-drive mode. Do not merge or pull from `usb-gadget-mode`.
+Currently working on **`fb-direct`** — branched from `picoKeyboard`. Same Pico USB-HID input, but the display is driven directly via SDL's `fbcon` framebuffer driver instead of X11, so the Pi can boot straight to the app with no desktop session. Do not merge or pull from `usb-gadget-mode`.
 
 ## Project Purpose
 
-Python app that runs on a Raspberry Pi 4 (Raspbian, X11 auto-login). Plays sequences of WAV files through a HiFiBerry DAC Pro XLR and fires a 100ms GPIO pulse on camera trigger pin to sync audio playback with an external video recorder.
+Python app that runs on a Raspberry Pi 4 (Raspbian Lite, no desktop required). Plays sequences of WAV files through a HiFiBerry DAC Pro XLR and fires a 100ms GPIO pulse on camera trigger pin to sync audio playback with an external video recorder.
 
 ## Dev Commands
 
@@ -63,21 +63,30 @@ The Pico firmware is pre-compiled: `rotary_encoder_keyboard/build/*.uf2`. Flash 
 ### Touch Status
 **XPT2046 touch is disabled** in this branch. Run `disable_touch.sh` on the Pi to blacklist the driver. The `touchscreen.py` only wires up the single long-press GPIO button — all other button callbacks are no-ops. Mouse events from pygame are still routed to `screen.handle_input()` but no physical touch input is connected.
 
-### Deployment & Service
-`install.sh` handles full Pi setup: apt deps, Waveshare LCD driver, HiFiBerry config, X11 auto-login + startx, venv, and systemd service. The service file `samplepi.service` has `%USER%`/`%HOME%` placeholders that `install.sh` substitutes at install time. Service runs under X11 (`After=graphical.target`, `DISPLAY=:0`).
+### Display: direct framebuffer (fb-direct branch)
+No X11, no window manager, no desktop autostart. `samplepi/main.py::configure_display_driver()` sets `SDL_VIDEODRIVER=fbcon` and `SDL_FBDEV` (from `settings.FRAMEBUFFER_DEVICE`, default `/dev/fb1`) before `pygame.init()`, but only when `DISPLAY` is unset — so dev on Mac/X11 is unaffected.
 
-**Known issue:** `samplepi.service` does not set `MEDIA_PATH_TYPE=production`, so it runs with `test_media/` paths by default. Must add `Environment="MEDIA_PATH_TYPE=production"` to the service for production use.
+- `settings.FRAMEBUFFER_DEVICE` — override with `SAMPLEPI_FBDEV` env var if the Waveshare LCD enumerates as a different `/dev/fbN`.
+- The old manual mmap-based `samplepi/framebuffer.py` blitter (unused, from an earlier abandoned attempt) was removed — SDL's `fbcon` driver handles the blit/format conversion now.
+- `samplepi.service` runs on `/dev/tty1` (`TTYPath`, `StandardInput=tty`) so SDL's fbcon driver can own the VT (cursor blanking) and read input from `/dev/input/event*`. Targets `multi-user.target`, no `graphical.target` dependency.
+- `install.sh` adds the service user to the `video`, `input`, `tty`, `render` groups instead of configuring X11/`fbturbo`/auto-login/startx.
+
+**Not yet verified on hardware:** whether `fbcon` renders correctly (color order/rotation) on the Waveshare 3.2" `waveshare32b` overlay, and whether the Pico's USB-HID keyboard events reach SDL via fbcon's evdev input. If `fbcon` has issues with this panel, `kmsdrm` (for DRM/tinydrm-based panel drivers) is the other option to try.
+
+### Deployment & Service
+`install.sh` handles full Pi setup: apt deps, Waveshare LCD driver, HiFiBerry config, venv, group permissions, and systemd service. The service file `samplepi.service` has `%USER%`/`%HOME%` placeholders that `install.sh` substitutes at install time.
 
 Production media lives at `/home/pi/media/{test_wavs,samples}/`.
 
 ## Branch Map
 
-| Branch | Input method | USB gadget |
-|--------|-------------|------------|
-| `main` | GPIO direct (17/27/22) | No |
-| `picoKeyboard` | Pico USB HID | No |
-| `usb-gadget-mode` | Pico USB HID | Yes (long-press toggle) |
-| `sidd` | GPIO direct | No |
+| Branch | Input method | Display |
+|--------|-------------|---------|
+| `main` | GPIO direct (17/27/22) | X11 |
+| `picoKeyboard` | Pico USB HID | X11 (auto-login + startx) |
+| `fb-direct` | Pico USB HID | Direct framebuffer (`fbcon`, no X11) |
+| `usb-gadget-mode` | Pico USB HID | X11, plus USB gadget (long-press toggle) |
+| `sidd` | GPIO direct | X11 |
 
 ## File Transfer
 
@@ -116,6 +125,8 @@ The main `install.sh` installs both automatically (steps 10 and 11). To install 
 | Test | Status |
 |------|--------|
 | Pico sends correct keycodes (↑↓ Enter L) | **PASS** |
+| Direct framebuffer (`fbcon`) renders correctly on Waveshare LCD | pending |
+| Pico keyboard input received via fbcon (no X11) | pending |
 | Audio plays through HiFiBerry | pending |
 | Camera trigger 100ms pulse | pending |
 | Pause does not re-trigger camera | pending |

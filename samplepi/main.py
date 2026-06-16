@@ -12,13 +12,26 @@ from samplepi.gpio import RotaryEncoder, CameraTrigger
 from samplepi.gpio.touchscreen import TouchscreenButtons
 
 
+def configure_display_driver():
+    """Select an SDL video driver before pygame.init().
+
+    On the Pi, render straight to the LCD's framebuffer (no X11/desktop
+    needed). If DISPLAY is set (e.g. dev on Mac, or an X session), leave
+    SDL's default driver selection alone.
+    """
+    if sys.platform.startswith("linux") and "DISPLAY" not in os.environ:
+        os.environ.setdefault("SDL_VIDEODRIVER", "fbcon")
+        os.environ.setdefault("SDL_FBDEV", settings.FRAMEBUFFER_DEVICE)
+
+
 class MediaPlayerApp:
     def __init__(self):
         """Initialize the MediaPlayer application"""
+        configure_display_driver()
         pygame.init()
 
         # Run fullscreen pygame application
-        print("Initializing fullscreen display")
+        print(f"Initializing fullscreen display (SDL driver: {pygame.display.get_driver()})")
         self.screen = pygame.display.set_mode(
             (settings.DISPLAY_WIDTH, settings.DISPLAY_HEIGHT),
             pygame.FULLSCREEN
